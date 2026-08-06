@@ -70,12 +70,12 @@ function matchRetailerKey(label: string): string | undefined {
 }
 
 export function buildProductSearchUrl(retailer: string, brand: string, name: string): string {
-  const query = encodeQuery(`${brand} ${name}`.trim());
+  const query = encodeQuery(buildSearchQueryText(brand, name));
   const key = matchRetailerKey(retailer) ?? matchRetailerKey(brand);
 
   if (key) return RETAILER_SEARCH[key](query);
 
-  return `https://www.amazon.com/s?k=${encodeQuery(`${brand} ${name} ${retailer}`)}`;
+  return `https://www.amazon.com/s?k=${encodeQuery(`${buildSearchQueryText(brand, name)} ${retailer}`.trim())}`;
 }
 
 export function buildAlternativeUrl(brand: string, name: string): string {
@@ -90,19 +90,27 @@ export function buildSecondhandUrl(platform: string, brand: string, name: string
 }
 
 export function resolveProductUrl(
-  _url: string | undefined,
+  url: string | undefined,
   retailer: string,
   brand: string,
   name: string
 ): string {
+  const direct = url?.trim();
+  if (direct && direct !== "#" && direct.startsWith("http") && !isGoogleUrl(direct)) {
+    return direct;
+  }
   return buildProductSearchUrl(retailer, brand, name);
 }
 
 export function resolveAlternativeUrl(
-  _url: string | undefined,
+  url: string | undefined,
   brand: string,
   name: string
 ): string {
+  const direct = url?.trim();
+  if (direct && direct !== "#" && direct.startsWith("http") && !isGoogleUrl(direct)) {
+    return direct;
+  }
   return buildAlternativeUrl(brand, name);
 }
 
@@ -117,8 +125,51 @@ export function resolveSecondhandUrl(
 
 export function isGoogleUrl(url: string): boolean {
   try {
-    return new URL(url).hostname.includes("google.");
+    const hostname = new URL(url).hostname.toLowerCase();
+    return hostname.includes("google.") || hostname.includes("gstatic.com/shopping");
   } catch {
     return false;
   }
+}
+
+/** Unwrap Google redirect URLs and keep direct retailer product links. */
+export function resolveRetailerLink(raw?: string): string | undefined {
+  if (!raw?.trim()) return undefined;
+
+  let candidate = raw.trim();
+  try {
+    for (let i = 0; i < 2; i++) {
+      const parsed = new URL(candidate);
+      const hostname = parsed.hostname.toLowerCase();
+
+      if (hostname.includes("google.")) {
+        const wrapped =
+          parsed.searchParams.get("q") ??
+          parsed.searchParams.get("url") ??
+          parsed.searchParams.get("adurl");
+        if (wrapped?.startsWith("http")) {
+          candidate = wrapped;
+          continue;
+        }
+        return undefined;
+      }
+
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        return parsed.toString();
+      }
+      return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return isGoogleUrl(candidate) ? undefined : candidate;
+}
+
+function buildSearchQueryText(brand: string, name: string): string {
+  const b = brand.trim();
+  const n = name.trim();
+  if (!b) return n;
+  if (n.toLowerCase().startsWith(b.toLowerCase())) return n;
+  return `${b} ${n}`;
 }

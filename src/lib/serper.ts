@@ -1,4 +1,4 @@
-import { RETAILER_DOMAINS, isGoogleUrl } from "./product-links";
+import { RETAILER_DOMAINS, resolveRetailerLink } from "./product-links";
 import { coercePrice } from "./utils";
 
 export interface SerperListing {
@@ -192,8 +192,8 @@ function itemToListing(
   if (score < minScore) return null;
 
   const price = parseSerperPrice(item.price);
-  const url = item.link;
-  if (!url || isGoogleUrl(url)) return null;
+  const url = resolveRetailerLink(item.link);
+  if (!url) return null;
   if (requirePrice && !price) return null;
 
   return {
@@ -203,6 +203,44 @@ function itemToListing(
     source: item.source ?? product.brand,
     imageUrl: extractItemImageUrl(item),
   };
+}
+
+function rawItemToListing(item: SerperShoppingItem, product: ProductMatchInfo): SerperListing | null {
+  const url = resolveRetailerLink(item.link);
+  if (!url) return null;
+
+  return {
+    url,
+    price: parseSerperPrice(item.price),
+    title: item.title ?? product.name,
+    source: item.source ?? product.brand,
+    imageUrl: extractItemImageUrl(item),
+  };
+}
+
+/** Best-effort direct product links from raw Serper shopping results. */
+export function pickDirectShoppingListings(
+  items: SerperShoppingItem[],
+  product: ProductMatchInfo,
+  userQuery?: string
+): SerperListing[] {
+  const sharedImage = findFirstShoppingImage(items);
+
+  return items
+    .map((item) => {
+      const listing = rawItemToListing(item, product);
+      if (!listing) return null;
+      const score = scoreListingTitle(listing.title, product, userQuery);
+      const withImage = listing.imageUrl
+        ? listing
+        : sharedImage
+          ? { ...listing, imageUrl: sharedImage }
+          : listing;
+      return { listing: withImage, score };
+    })
+    .filter((x): x is { listing: SerperListing; score: number } => x !== null)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => x.listing);
 }
 
 async function fetchShoppingItems(
@@ -226,10 +264,11 @@ function scoreAndSortListings(
 ): SerperListing[] {
   const domain = getDomainForLabel(retailer) ?? getDomainForLabel(product.brand);
   const sharedImage = findFirstShoppingImage(items);
+  const minScore = requirePrice ? 10 : 0;
 
   return items
     .map((item) => {
-      const listing = itemToListing(item, 10, product, userQuery, requirePrice);
+      const listing = itemToListing(item, minScore, product, userQuery, requirePrice);
       if (!listing) return null;
       const domainBoost = domain && listing.url.includes(domain) ? 20 : 0;
       const score = scoreListingTitle(listing.title, product, userQuery) + domainBoost;

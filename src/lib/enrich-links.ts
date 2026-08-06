@@ -11,7 +11,10 @@ import {
   lookupProductListings,
   mergeListingImage,
   normalizeImageUrl,
+  pickDirectShoppingListings,
+  type ShoppingLookupResult,
 } from "./serper";
+import { RETAILER_DOMAINS } from "./product-links";
 import { resolveProductImageUrl, resolveQueryImageUrl } from "./resolve-image";
 import { coercePrice } from "./utils";
 
@@ -33,6 +36,87 @@ function sanitizeRetailerPrice(price: RetailerPrice, fallback?: RetailerPrice): 
     price: parsed ?? 0,
     priceVerified: parsed !== undefined && price.priceVerified === true,
     imageUrl: normalizeImageUrl(price.imageUrl) ?? normalizeImageUrl(fallback?.imageUrl),
+  };
+}
+
+function isGenericSearchUrl(url?: string): boolean {
+  if (!url) return true;
+  return /\/search|\/sr\?|\/w\?q=|searchTerm=|search\?|\/s\?k=|browse\/search/i.test(url);
+}
+
+function retailerDomain(label: string): string | undefined {
+  const key = label.toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const [retailer, domain] of Object.entries(RETAILER_DOMAINS)) {
+    const rk = retailer.replace(/[^a-z0-9]/g, "");
+    if (key.includes(rk) || rk.includes(key)) return domain;
+  }
+  return undefined;
+}
+
+function matchListingForRetailer(
+  listings: ReturnType<typeof pickDirectShoppingListings>,
+  retailer: string
+) {
+  const domain = retailerDomain(retailer);
+  return (
+    listings.find((listing) => {
+      const source = listing.source.toLowerCase();
+      const label = retailer.toLowerCase();
+      return source.includes(label) || label.includes(source);
+    }) ??
+    (domain ? listings.find((listing) => listing.url.includes(domain)) : undefined)
+  );
+}
+
+function applyDirectShoppingLinks(
+  lookup: ShoppingLookupResult,
+  product: ProductAnalysis["identifiedProduct"],
+  userQuery: string | undefined,
+  lowestPrice: RetailerPrice,
+  prices: RetailerPrice[]
+): { lowestPrice: RetailerPrice; prices: RetailerPrice[]; matchedListingTitle?: string } {
+  const directListings = pickDirectShoppingListings(lookup.items, product, userQuery);
+  if (directListings.length === 0) {
+    return { lowestPrice, prices };
+  }
+
+  const best = mergeListingImage(directListings[0], directListings, lookup.items);
+  const bestPrice = validPrice(best.price);
+
+  const nextLowest: RetailerPrice = {
+    ...lowestPrice,
+    url: best.url || lowestPrice.url,
+    retailer: best.source || lowestPrice.retailer,
+    price: bestPrice ?? lowestPrice.price,
+    priceVerified: bestPrice !== undefined ? true : lowestPrice.priceVerified,
+    listingTitle: best.title,
+    imageUrl: best.imageUrl ?? lowestPrice.imageUrl,
+  };
+
+  const nextPrices = prices.map((priceRow) => {
+    if (!isGenericSearchUrl(priceRow.url)) return priceRow;
+
+    const match =
+      matchListingForRetailer(directListings, priceRow.retailer) ??
+      (priceRow === prices[0] || priceRow.retailer === lowestPrice.retailer ? best : undefined);
+
+    if (!match) return priceRow;
+
+    const matchedPrice = validPrice(match.price);
+    return {
+      ...priceRow,
+      url: match.url,
+      price: matchedPrice ?? priceRow.price,
+      priceVerified: matchedPrice !== undefined,
+      listingTitle: match.title,
+      imageUrl: match.imageUrl ?? priceRow.imageUrl,
+    };
+  });
+
+  return {
+    lowestPrice: nextLowest,
+    prices: nextPrices,
+    matchedListingTitle: best.title,
   };
 }
 
@@ -285,9 +369,17 @@ export async function enrichAnalysisLinks(
         pricesVerified = fallbackPrice !== undefined;
       }
     }
+
+    const linked = applyDirectShoppingLinks(lookup, product, userQuery, lowestPrice, prices);
+    lowestPrice = linked.lowestPrice;
+    prices = linked.prices;
+    matchedListingTitle = linked.matchedListingTitle ?? matchedListingTitle;
+    if (validPrice(lowestPrice.price) && !isGenericSearchUrl(lowestPrice.url)) {
+      pricesVerified = pricesVerified || lowestPrice.priceVerified === true;
+    }
   }
 
-  if (!lowestPrice.url || lowestPrice.url === "#") {
+  if (!lowestPrice.url || lowestPrice.url === "#" || isGenericSearchUrl(lowestPrice.url)) {
     lowestPrice.url = buildProductSearchUrl(lowestPrice.retailer, product.brand, product.name);
   }
 
