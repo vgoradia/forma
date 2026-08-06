@@ -26,7 +26,7 @@ export function LogoMark({
       width={h}
       height={h}
       priority={priority}
-      className={cn("shrink-0 rounded-xl object-contain", className)}
+      className={cn("shrink-0 rounded-xl object-cover object-center", className)}
       style={{ width: h, height: h }}
     />
   );
