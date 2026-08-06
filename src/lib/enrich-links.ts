@@ -7,6 +7,8 @@ import {
 import {
   findBestListing,
   findImageForQuery,
+  findProductLinkViaWebSearch,
+  findRetailerLinkViaWebSearch,
   getSerperApiKey,
   lookupProductListings,
   mergeListingImage,
@@ -96,9 +98,15 @@ function applyDirectShoppingLinks(
   const nextPrices = prices.map((priceRow) => {
     if (!isGenericSearchUrl(priceRow.url)) return priceRow;
 
+    const shoppingMatch = lookup.items.find((item) => {
+      const source = (item.source ?? "").toLowerCase();
+      const label = priceRow.retailer.toLowerCase();
+      return source.includes(label) || label.includes(source);
+    });
+
     const match =
       matchListingForRetailer(directListings, priceRow.retailer) ??
-      (priceRow === prices[0] || priceRow.retailer === lowestPrice.retailer ? best : undefined);
+      (priceRow.retailer === lowestPrice.retailer ? best : undefined);
 
     if (!match) return priceRow;
 
@@ -108,7 +116,7 @@ function applyDirectShoppingLinks(
       url: match.url,
       price: matchedPrice ?? priceRow.price,
       priceVerified: matchedPrice !== undefined,
-      listingTitle: match.title,
+      listingTitle: match.title ?? shoppingMatch?.title,
       imageUrl: match.imageUrl ?? priceRow.imageUrl,
     };
   });
@@ -118,6 +126,69 @@ function applyDirectShoppingLinks(
     prices: nextPrices,
     matchedListingTitle: best.title,
   };
+}
+
+async function applyWebSearchLinks(
+  apiKey: string,
+  lookup: ShoppingLookupResult,
+  product: ProductAnalysis["identifiedProduct"],
+  userQuery: string | undefined,
+  lowestPrice: RetailerPrice,
+  prices: RetailerPrice[]
+): Promise<{ lowestPrice: RetailerPrice; prices: RetailerPrice[]; matchedListingTitle?: string }> {
+  let matchedListingTitle: string | undefined;
+  let nextLowest = { ...lowestPrice };
+  let nextPrices = [...prices];
+
+  if (isGenericSearchUrl(nextLowest.url)) {
+    const best =
+      (await findProductLinkViaWebSearch(apiKey, product, userQuery, nextLowest.retailer)) ??
+      (await findProductLinkViaWebSearch(apiKey, product, userQuery, product.brand));
+
+    if (best) {
+      nextLowest = {
+        ...nextLowest,
+        url: best.url,
+        retailer: best.source || nextLowest.retailer,
+        listingTitle: best.title,
+        priceVerified: validPrice(best.price) !== undefined ? true : nextLowest.priceVerified,
+        price: validPrice(best.price) ?? nextLowest.price,
+      };
+      matchedListingTitle = best.title;
+    }
+  }
+
+  nextPrices = await Promise.all(
+    nextPrices.map(async (priceRow) => {
+      if (!isGenericSearchUrl(priceRow.url)) return priceRow;
+
+      const shoppingMatch = lookup.items.find((item) => {
+        const source = (item.source ?? "").toLowerCase();
+        const label = priceRow.retailer.toLowerCase();
+        return source.includes(label) || label.includes(source);
+      });
+
+      const retailerListing = await findRetailerLinkViaWebSearch(
+        apiKey,
+        priceRow.retailer,
+        product,
+        shoppingMatch?.title,
+        userQuery
+      );
+
+      if (!retailerListing) return priceRow;
+
+      return {
+        ...priceRow,
+        url: retailerListing.url,
+        listingTitle: retailerListing.title,
+        priceVerified: validPrice(retailerListing.price) !== undefined,
+        price: validPrice(retailerListing.price) ?? priceRow.price,
+      };
+    })
+  );
+
+  return { lowestPrice: nextLowest, prices: nextPrices, matchedListingTitle };
 }
 
 async function enrichImages(
@@ -374,6 +445,21 @@ export async function enrichAnalysisLinks(
     lowestPrice = linked.lowestPrice;
     prices = linked.prices;
     matchedListingTitle = linked.matchedListingTitle ?? matchedListingTitle;
+
+    if (isGenericSearchUrl(lowestPrice.url) || prices.some((p) => isGenericSearchUrl(p.url))) {
+      const webLinked = await applyWebSearchLinks(
+        serperKey,
+        lookup,
+        product,
+        userQuery,
+        lowestPrice,
+        prices
+      );
+      lowestPrice = webLinked.lowestPrice;
+      prices = webLinked.prices;
+      matchedListingTitle = webLinked.matchedListingTitle ?? matchedListingTitle;
+    }
+
     if (validPrice(lowestPrice.price) && !isGenericSearchUrl(lowestPrice.url)) {
       pricesVerified = pricesVerified || lowestPrice.priceVerified === true;
     }
@@ -415,6 +501,20 @@ export async function enrichAnalysisLinks(
             priceVerified = true;
           }
           imageUrl = listing.imageUrl ?? imageUrl;
+        }
+      }
+
+      if (isGenericSearchUrl(url) && serperKey) {
+        const webListing = await findRetailerLinkViaWebSearch(
+          serperKey,
+          alt.brand,
+          { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
+          `${alt.brand} ${alt.name}`,
+          `${alt.brand} ${alt.name}`
+        );
+        if (webListing) {
+          url = webListing.url;
+          imageUrl = imageUrl ?? webListing.imageUrl;
         }
       }
 

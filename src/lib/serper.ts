@@ -353,6 +353,124 @@ export async function findBestListing(
   return null;
 }
 
+interface SerperOrganicResult {
+  title?: string;
+  link?: string;
+  snippet?: string;
+}
+
+function scoreOrganicProductLink(
+  url: string,
+  title: string,
+  product: ProductMatchInfo,
+  userQuery?: string
+): number {
+  let score = scoreListingTitle(title, product, userQuery);
+  if (/\/t\/|\/dp\/|\/p\/|\/product\/|\/products\//i.test(url)) score += 60;
+  if (/\/w\/|\/search|\/sr\?|\/s\?k=|searchTerm=|browse\/search|\/plp\/|\/collection/i.test(url)) score -= 25;
+  const brandKey = product.brand.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (brandKey && url.toLowerCase().includes(brandKey)) score += 15;
+  return score;
+}
+
+function sourceFromUrl(url: string, fallback: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    const label = hostname.split(".")[0];
+    return label ? label.charAt(0).toUpperCase() + label.slice(1) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function pickBestOrganicListing(
+  organic: SerperOrganicResult[] | undefined,
+  product: ProductMatchInfo,
+  userQuery?: string,
+  preferredSource?: string
+): SerperListing | null {
+  if (!organic?.length) return null;
+
+  const preferredDomain = preferredSource ? getDomainForLabel(preferredSource) : undefined;
+
+  const ranked = organic
+    .map((result) => {
+      const url = resolveRetailerLink(result.link);
+      if (!url) return null;
+      let score = scoreOrganicProductLink(url, result.title ?? product.name, product, userQuery);
+      if (preferredDomain && url.includes(preferredDomain)) score += 40;
+      return {
+        listing: {
+          url,
+          title: result.title ?? product.name,
+          source: sourceFromUrl(url, preferredSource ?? product.brand),
+        },
+        score,
+      };
+    })
+    .filter((x): x is { listing: SerperListing; score: number } => x !== null)
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  if (!best || best.score < 20) return null;
+  return best.listing;
+}
+
+export async function findProductLinkViaWebSearch(
+  apiKey: string,
+  product: ProductMatchInfo,
+  userQuery?: string,
+  preferredSource?: string
+): Promise<SerperListing | null> {
+  if (preferredSource) {
+    const brandListing = await findRetailerLinkViaWebSearch(
+      apiKey,
+      preferredSource,
+      product,
+      undefined,
+      userQuery
+    );
+    if (brandListing) return brandListing;
+  }
+
+  const queries = [
+    buildSearchQuery(product, userQuery),
+    `${product.brand} ${product.name}`.trim(),
+  ].filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+  for (const query of queries) {
+    const data = await serperPost<{ organic?: SerperOrganicResult[] }>(
+      "search",
+      { q: query, num: 10 },
+      apiKey
+    );
+    const listing = pickBestOrganicListing(data?.organic, product, userQuery, preferredSource);
+    if (listing) return listing;
+  }
+
+  return null;
+}
+
+export async function findRetailerLinkViaWebSearch(
+  apiKey: string,
+  retailer: string,
+  product: ProductMatchInfo,
+  listingTitle?: string,
+  userQuery?: string
+): Promise<SerperListing | null> {
+  const domain = getDomainForLabel(retailer);
+  if (!domain) return null;
+
+  const baseQuery = listingTitle?.trim() || buildSearchQuery(product, userQuery);
+  const data = await serperPost<{ organic?: SerperOrganicResult[] }>(
+    "search",
+    { q: `${baseQuery} site:${domain}`, num: 8 },
+    apiKey
+  );
+
+  return pickBestOrganicListing(data?.organic, product, userQuery, retailer);
+}
+
 export async function findImageViaWebSearch(
   apiKey: string,
   query: string
