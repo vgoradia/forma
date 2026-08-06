@@ -16,13 +16,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    let referer = "https://www.google.com/";
+    try {
+      referer = new URL(raw).origin + "/";
+    } catch {
+      // keep default referer
+    }
+
     const upstream = await fetch(raw, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; FormaBot/1.0; +https://forma.app)",
-        Accept: "image/*,*/*;q=0.8",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        Referer: referer,
       },
       redirect: "follow",
+      signal: AbortSignal.timeout(12_000),
     });
 
     if (!upstream.ok) {
@@ -30,11 +39,15 @@ export async function GET(request: NextRequest) {
     }
 
     const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
+    if (!contentType.startsWith("image/") && contentType !== "application/octet-stream") {
+      return NextResponse.json({ error: "Not an image" }, { status: 415 });
+    }
+
     const buffer = await upstream.arrayBuffer();
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": contentType.startsWith("image/") ? contentType : "image/jpeg",
         "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       },
     });

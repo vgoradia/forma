@@ -1,6 +1,8 @@
 import type { ProductAnalysis } from "./types";
 import { getScan, saveScan } from "./storage";
 
+export { proxiedImageUrl, getDisplayImageSrc } from "./image-proxy";
+
 export function getAnalysisHeroImage(
   analysis: ProductAnalysis,
   imagePreview?: string | null
@@ -11,11 +13,6 @@ export function getAnalysisHeroImage(
     analysis.lowestPrice.imageUrl ??
     analysis.prices.find((p) => p.imageUrl)?.imageUrl
   );
-}
-
-export function proxiedImageUrl(url: string): string {
-  if (url.startsWith("data:") || url.startsWith("/api/image")) return url;
-  return `/api/image?url=${encodeURIComponent(url)}`;
 }
 
 export async function fetchProductImageUrl(

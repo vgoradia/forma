@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { proxiedImageUrl } from "@/lib/product-images";
+import { getDisplayImageSrc } from "@/lib/image-proxy";
 
 function ProductImageInner({
   src,
@@ -18,14 +18,9 @@ function ProductImageInner({
   fit?: "cover" | "contain";
 }) {
   const [failed, setFailed] = useState(false);
-  const [useProxy, setUseProxy] = useState(false);
 
   const trimmed = src?.trim();
-  const displaySrc = trimmed
-    ? useProxy
-      ? proxiedImageUrl(trimmed)
-      : trimmed
-    : undefined;
+  const displaySrc = trimmed ? getDisplayImageSrc(trimmed) : undefined;
 
   const isScreenshot = trimmed?.startsWith("data:") ?? false;
   const objectFit = isScreenshot ? "contain" : fit;
@@ -57,14 +52,9 @@ function ProductImageInner({
           objectFit === "contain" ? "object-contain object-center" : "object-cover object-center"
         )}
         loading="lazy"
+        decoding="async"
         referrerPolicy="no-referrer"
-        onError={() => {
-          if (!useProxy && trimmed && !trimmed.startsWith("data:")) {
-            setUseProxy(true);
-            return;
-          }
-          setFailed(true);
-        }}
+        onError={() => setFailed(true)}
       />
     </div>
   );

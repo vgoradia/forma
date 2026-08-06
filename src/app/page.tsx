@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getDisplayImageSrc } from "@/lib/image-proxy";
 import {
   Sparkles,
   Camera,
@@ -163,7 +164,7 @@ export default function LandingPage() {
                 <div className="grid gap-4 sm:grid-cols-5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={DEMO_IMAGE}
+                    src={getDisplayImageSrc(DEMO_IMAGE)}
                     alt="Reformation dress"
                     className="h-40 w-full rounded-2xl object-cover sm:col-span-2 sm:h-full sm:min-h-[220px]"
                   />

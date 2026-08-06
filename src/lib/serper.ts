@@ -337,7 +337,7 @@ export async function findProductImage(
 }
 
 export function getSerperApiKey(): string | undefined {
-  const key = process.env.SERPER_API_KEY?.trim();
-  if (!key || key === "your-serper-key-here") return undefined;
-  return key;
+  const raw = process.env.SERPER_API_KEY?.trim().replace(/^["']|["']$/g, "");
+  if (!raw || raw === "your-serper-key-here") return undefined;
+  return raw;
 }

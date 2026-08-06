@@ -196,12 +196,13 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
             },
           ];
 
-  const lowestPrice = prices[0];
-
   const resolvedPrices = prices.map((p) => ({
     ...p,
     url: resolveProductUrl(p.url, p.retailer, product.brand, product.name),
+    imageUrl: images.hero,
   }));
+
+  const lowestWithImage = resolvedPrices[0];
 
   const resolvedAlternatives = alternatives.map((alt, i) => ({
     ...alt,
@@ -237,7 +238,7 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
       worthItScore: scenario === "sneakers" ? 68 : 84,
     },
     prices: resolvedPrices,
-    lowestPrice: resolvedPrices[0],
+    lowestPrice: lowestWithImage,
     alternatives: resolvedAlternatives,
     reviewSummary: {
       overallRating: 4.3,
@@ -261,21 +262,21 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
     outfitSuggestions:
       scenario === "blazer"
         ? [
-            { name: "White ribbed tank", category: "Top", reason: "Clean contrast against camel" },
-            { name: "High-waist wide-leg trousers", category: "Bottom", reason: "Elongates silhouette" },
-            { name: "Gold hoop earrings", category: "Accessories", reason: "Warm metal complements camel tones" },
-            { name: "Pointed-toe mules", category: "Shoes", reason: "Polished finish for smart-casual" },
+            { name: "White ribbed tank", category: "Top", reason: "Clean contrast against camel", imageUrl: img("1594938298603-c8148c4dae35") },
+            { name: "High-waist wide-leg trousers", category: "Bottom", reason: "Elongates silhouette", imageUrl: img("1515886657613-9f3515b0c78f") },
+            { name: "Gold hoop earrings", category: "Accessories", reason: "Warm metal complements camel tones", imageUrl: img("1469334031218-e382a71b716b") },
+            { name: "Pointed-toe mules", category: "Shoes", reason: "Polished finish for smart-casual", imageUrl: img("1549298916-b41d501d3772") },
           ]
         : scenario === "dress"
           ? [
-              { name: "Strappy heeled sandals", category: "Shoes", reason: "Elegant evening look" },
-              { name: "Delicate layered necklaces", category: "Accessories", reason: "Adds dimension to cowl neck" },
-              { name: "Cropped leather jacket", category: "Outerwear", reason: "Edgy contrast for day-to-night" },
+              { name: "Strappy heeled sandals", category: "Shoes", reason: "Elegant evening look", imageUrl: img("1549298916-b41d501d3772") },
+              { name: "Delicate layered necklaces", category: "Accessories", reason: "Adds dimension to cowl neck", imageUrl: img("1469334031218-e382a71b716b") },
+              { name: "Cropped leather jacket", category: "Outerwear", reason: "Edgy contrast for day-to-night", imageUrl: img("1591047139829-d91aecb6caea") },
             ]
           : [
-              { name: "Slim-fit chinos", category: "Bottom", reason: "Clean casual pairing" },
-              { name: "Oversized linen shirt", category: "Top", reason: "Relaxed summer look" },
-              { name: "Minimalist watch", category: "Accessories", reason: "Understated luxury" },
+              { name: "Slim-fit chinos", category: "Bottom", reason: "Clean casual pairing", imageUrl: img("1594938298603-c8148c4dae35") },
+              { name: "Oversized linen shirt", category: "Top", reason: "Relaxed summer look", imageUrl: img("1566174053879-31528523f8ae") },
+              { name: "Minimalist watch", category: "Accessories", reason: "Understated luxury", imageUrl: img("1469334031218-e382a71b716b") },
             ],
     priceHistory: [
       { date: "2025-10", price: product.estimatedRetailPrice + 20 },
@@ -283,7 +284,7 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
       { date: "2025-12", price: product.estimatedRetailPrice - 10 },
       { date: "2026-01", price: product.estimatedRetailPrice - 25 },
       { date: "2026-02", price: product.estimatedRetailPrice - 15 },
-      { date: "2026-03", price: lowestPrice.price },
+      { date: "2026-03", price: lowestWithImage.price },
     ],
     salePrediction: {
       likelihood: "medium",
@@ -298,10 +299,10 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
       "Pair with textured fabrics (linen, ribbed knits) for visual interest",
     ],
     wardrobeMatches: [
-      { item: "White sneakers", compatibility: "high", note: "Classic smart-casual combo" },
-      { item: "Dark wash jeans", compatibility: "high", note: "Effortless everyday pairing" },
-      { item: "Black ankle boots", compatibility: "medium", note: "Works for evening looks" },
-      { item: "Floral print pieces", compatibility: "low", note: "Clashing aesthetics — keep patterns minimal" },
+      { item: "White sneakers", compatibility: "high", note: "Classic smart-casual combo", imageUrl: img("1549298916-b41d501d3772", 200, 200) },
+      { item: "Dark wash jeans", compatibility: "high", note: "Effortless everyday pairing", imageUrl: img("1594938298603-c8148c4dae35", 200, 200) },
+      { item: "Black ankle boots", compatibility: "medium", note: "Works for evening looks", imageUrl: img("1608231387042-66d1773070a5", 200, 200) },
+      { item: "Floral print pieces", compatibility: "low", note: "Clashing aesthetics — keep patterns minimal", imageUrl: img("1566174053879-31528523f8ae", 200, 200) },
     ],
     secondhand: resolvedSecondhand,
     analyzedAt: new Date().toISOString(),
