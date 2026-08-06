@@ -1,48 +1,61 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-const heights = {
+const BRAND = {
+  icon: "/forma-icon.png",
+  logo: "/forma-logo.png",
+  wordmark: "/forma-wordmark.png",
+} as const;
+
+const markHeights = {
   sm: 36,
   md: 44,
   lg: 56,
 } as const;
 
-type LogoSize = keyof typeof heights;
+type LogoSize = keyof typeof markHeights;
 
-export function LogoMark({
-  size = "md",
-  className,
-  priority = false,
-}: {
+type LogoMarkProps = {
   size?: LogoSize;
+  /** Override rendered pixel size (width = height). */
+  sizePx?: number;
   className?: string;
   priority?: boolean;
-}) {
-  const h = heights[size];
+};
+
+/** Icon tile — shopping bag mark on brand dark background. */
+export function LogoMark({ size = "md", sizePx, className, priority = false }: LogoMarkProps) {
+  const h = sizePx ?? markHeights[size];
   return (
-    <Image
-      src="/forma-icon.png"
+    // Native img avoids Next.js image dedup/optimization quirks with repeated logos.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={BRAND.icon}
       alt="Forma"
       width={h}
       height={h}
-      priority={priority}
-      className={cn("shrink-0 rounded-xl object-cover object-center", className)}
+      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
+      className={cn("shrink-0 rounded-[22%] object-contain", className)}
       style={{ width: h, height: h }}
     />
   );
 }
 
+type LogoWordmarkProps = {
+  size?: LogoSize;
+  className?: string;
+  showTagline?: boolean;
+  priority?: boolean;
+};
+
+/** Icon tile + Forma wordmark text — used in headers on light backgrounds. */
 export function LogoWordmark({
   size = "md",
   className,
   showTagline = false,
   priority = false,
-}: {
-  size?: LogoSize;
-  className?: string;
-  showTagline?: boolean;
-  priority?: boolean;
-}) {
+}: LogoWordmarkProps) {
   const titleSizes = {
     sm: "text-base",
     md: "text-lg",
@@ -62,31 +75,28 @@ export function LogoWordmark({
   );
 }
 
-/** Full logo tile — icon + Forma wordmark from the brand asset. */
-export function LogoFull({
-  size = "md",
-  className,
-  priority = false,
-}: {
-  size?: LogoSize;
-  className?: string;
-  priority?: boolean;
-}) {
-  const h = heights[size];
+/** Full brand lockup from the official logo asset (icon + Forma on dark tile). */
+export function LogoFull({ size = "md", className, priority = false }: LogoMarkProps) {
+  const h = markHeights[size];
+  const w = Math.round(h * 1.01);
   return (
-    <Image
-      src="/forma-logo.png"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={BRAND.logo}
       alt="Forma"
-      width={h}
+      width={w}
       height={h}
-      priority={priority}
+      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
       className={cn("shrink-0 rounded-2xl object-contain", className)}
-      style={{ width: h, height: h }}
+      style={{ width: w, height: h }}
     />
   );
 }
 
-// Back-compat alias used in a few places
 export function Logo(props: React.ComponentProps<typeof LogoWordmark>) {
   return <LogoWordmark {...props} />;
 }
+
+export { BRAND as logoAssets };

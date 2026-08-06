@@ -241,7 +241,7 @@ export default function ProfilePage() {
 
       <div className="mt-6 rounded-2xl border border-forma-border bg-white p-5 lg:max-w-xl">
         <div className="mb-3 flex items-center gap-2">
-          <LogoMark size="sm" className="!h-8 !w-8" />
+          <LogoMark sizePx={32} />
           <h3 className="font-semibold text-gray-900">Forma Plus</h3>
         </div>
         <p className="text-xs leading-relaxed text-forma-muted">

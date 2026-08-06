@@ -7,8 +7,8 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OpenGraphImage() {
-  const iconBuffer = await readFile(join(process.cwd(), "public/forma-icon.png"));
-  const iconSrc = `data:image/png;base64,${iconBuffer.toString("base64")}`;
+  const logoBuffer = await readFile(join(process.cwd(), "public/forma-logo.png"));
+  const logoSrc = `data:image/png;base64,${logoBuffer.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -21,40 +21,24 @@ export default async function OpenGraphImage() {
           alignItems: "center",
           justifyContent: "center",
           background: "#1A1B26",
+          gap: 32,
         }}
       >
-        <div
+        <img src={logoSrc} alt="" width={280} height={280} style={{ objectFit: "contain" }} />
+        <p
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "28px",
+            fontSize: 32,
+            fontWeight: 500,
+            color: "#A1A1AA",
+            maxWidth: 760,
+            textAlign: "center",
+            lineHeight: 1.35,
+            margin: 0,
           }}
         >
-          <img
-            src={iconSrc}
-            alt=""
-            width={120}
-            height={120}
-            style={{ borderRadius: 28 }}
-          />
-          <span style={{ fontSize: "72px", fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>
-            Forma
-          </span>
-          <p
-            style={{
-              fontSize: "32px",
-              fontWeight: 500,
-              color: "#A1A1AA",
-              maxWidth: "760px",
-              textAlign: "center",
-              lineHeight: 1.35,
-            }}
-          >
-            Should you buy it? Forma knows.
-          </p>
-          <p style={{ fontSize: "22px", color: "#6366f1", marginTop: "-8px" }}>shopwithforma.com</p>
-        </div>
+          Should you buy it? Forma knows.
+        </p>
+        <p style={{ fontSize: 22, color: "#6366f1", margin: 0 }}>shopwithforma.com</p>
       </div>
     ),
     { ...size }

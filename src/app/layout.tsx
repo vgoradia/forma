@@ -26,8 +26,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
   applicationName: "Forma",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "512x512" }],
     shortcut: [{ url: "/favicon.ico" }],
   },
   keywords: ["AI shopping", "price comparison", "fashion", "product finder", "shopping copilot"],

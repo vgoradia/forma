@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getDisplayImageSrc } from "@/lib/image-proxy";
-import { LogoWordmark } from "@/components/logo";
+import { LogoWordmark, LogoMark } from "@/components/logo";
 import { getAppUrl } from "@/lib/app-url";
 import {
   Camera,
@@ -131,15 +131,7 @@ export default function LandingPage() {
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
               <div>
                 <p className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-indigo-100 bg-white py-1.5 pl-1.5 pr-3.5 text-sm text-indigo-700">
-                  <span className="inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-lg">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/forma-icon.png"
-                      alt=""
-                      aria-hidden
-                      className="h-full w-full object-cover"
-                    />
-                  </span>
+                  <LogoMark sizePx={28} className="!rounded-lg" priority />
                   Free AI shopping copilot
                 </p>
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
