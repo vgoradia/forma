@@ -367,7 +367,7 @@ function scoreOrganicProductLink(
 ): number {
   let score = scoreListingTitle(title, product, userQuery);
   if (/\/t\/|\/dp\/|\/p\/|\/product\/|\/products\//i.test(url)) score += 60;
-  if (/\/w\/|\/search|\/sr\?|\/s\?k=|searchTerm=|browse\/search|\/plp\/|\/collection/i.test(url)) score -= 25;
+  if (/\/launch\/|\/w\/|\/search|\/sr\?|\/s\?k=|searchTerm=|browse\/search|\/plp\/|\/collection/i.test(url)) score -= 25;
   const brandKey = product.brand.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (brandKey && url.toLowerCase().includes(brandKey)) score += 15;
   return score;

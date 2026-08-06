@@ -31,6 +31,17 @@ const RETAILER_SEARCH: Record<string, (query: string) => string> = {
   ebay: (q) => `https://www.ebay.com/sch/i.html?_nkw=${q}`,
   therealreal: (q) => `https://www.therealreal.com/products?keywords=${q}`,
   "the realreal": (q) => `https://www.therealreal.com/products?keywords=${q}`,
+  footlocker: (q) => `https://www.footlocker.com/search?query=${q}`,
+  "foot locker": (q) => `https://www.footlocker.com/search?query=${q}`,
+  finishline: (q) => `https://www.finishline.com/search?query=${q}`,
+  "finish line": (q) => `https://www.finishline.com/search?query=${q}`,
+  jdsports: (q) => `https://www.jdsports.com/search/${q}/`,
+  "jd sports": (q) => `https://www.jdsports.com/search/${q}/`,
+  dickssportinggoods: (q) => `https://www.dickssportinggoods.com/search/SearchDisplay?searchTerm=${q}`,
+  "dick's sporting goods": (q) => `https://www.dickssportinggoods.com/search/SearchDisplay?searchTerm=${q}`,
+  hibbett: (q) => `https://www.hibbett.com/search?q=${q}`,
+  zappos: (q) => `https://www.zappos.com/search?term=${q}`,
+  stockx: (q) => `https://stockx.com/search?s=${q}`,
 };
 
 export const RETAILER_DOMAINS: Record<string, string> = {
@@ -55,6 +66,13 @@ export const RETAILER_DOMAINS: Record<string, string> = {
   poshmark: "poshmark.com",
   ebay: "ebay.com",
   therealreal: "therealreal.com",
+  footlocker: "footlocker.com",
+  finishline: "finishline.com",
+  jdsports: "jdsports.com",
+  dickssportinggoods: "dickssportinggoods.com",
+  hibbett: "hibbett.com",
+  zappos: "zappos.com",
+  stockx: "stockx.com",
 };
 
 function matchRetailerKey(label: string): string | undefined {
@@ -71,9 +89,19 @@ function matchRetailerKey(label: string): string | undefined {
 
 export function buildProductSearchUrl(retailer: string, brand: string, name: string): string {
   const query = encodeQuery(buildSearchQueryText(brand, name));
-  const key = matchRetailerKey(retailer) ?? matchRetailerKey(brand);
+  const retailerKey = matchRetailerKey(retailer);
 
-  if (key) return RETAILER_SEARCH[key](query);
+  if (retailerKey) return RETAILER_SEARCH[retailerKey](query);
+
+  const brandKey = matchRetailerKey(brand);
+  const retailerLooksLikeBrand =
+    !retailer.trim() ||
+    retailer.toLowerCase().includes(brand.toLowerCase()) ||
+    brand.toLowerCase().includes(retailer.toLowerCase());
+
+  if (brandKey && retailerLooksLikeBrand) {
+    return RETAILER_SEARCH[brandKey](query);
+  }
 
   return `https://www.amazon.com/s?k=${encodeQuery(`${buildSearchQueryText(brand, name)} ${retailer}`.trim())}`;
 }
