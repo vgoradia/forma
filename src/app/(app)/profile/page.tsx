@@ -26,6 +26,7 @@ import {
 } from "@/lib/storage";
 import { countWardrobeItems } from "@/lib/scan-helpers";
 import { PageContainer } from "@/components/page-container";
+import { LogoMark } from "@/components/logo";
 import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
 
 function SettingsRow({
@@ -240,7 +241,7 @@ export default function ProfilePage() {
 
       <div className="mt-6 rounded-2xl border border-forma-border bg-white p-5 lg:max-w-xl">
         <div className="mb-3 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-forma-primary" />
+          <LogoMark size="sm" className="!h-8 !w-8" />
           <h3 className="font-semibold text-gray-900">Forma Plus</h3>
         </div>
         <p className="text-xs leading-relaxed text-forma-muted">

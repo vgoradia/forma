@@ -27,6 +27,7 @@ import { HorizontalSection } from "@/components/home/horizontal-section";
 import { ProductCard } from "@/components/home/product-card";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
+import { LogoWordmark } from "@/components/logo";
 import { fetchProductImageUrl } from "@/lib/product-images";
 import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
 
@@ -107,8 +108,9 @@ export default function AppHomePage() {
       <div className="mb-6 flex items-start justify-between lg:mb-8">
         <div>
           <p className="text-sm text-forma-muted">{getGreeting()}, {GUEST_DISPLAY_NAME}</p>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 lg:text-4xl">Forma</h1>
-          <p className="text-sm text-forma-muted lg:text-base">Your shopping copilot</p>
+          <div className="mt-1">
+            <LogoWordmark size="lg" />
+          </div>
         </div>
         <Link
           href="/profile"

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Camera, Shirt, Bell, User, Sparkles } from "lucide-react";
+import { Home, Camera, Shirt, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LogoWordmark } from "@/components/logo";
 import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
 
 const tabs = [
@@ -70,15 +71,9 @@ export function AppNav() {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-forma-border bg-white lg:flex">
-        <div className="flex items-center gap-2.5 border-b border-forma-border px-6 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forma-primary text-white">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-900">Forma</p>
-            <p className="text-xs text-forma-muted">Shopping copilot</p>
-          </div>
-        </div>
+        <Link href="/home" className="border-b border-forma-border px-6 py-5">
+          <LogoWordmark size="md" />
+        </Link>
         <nav className="flex flex-1 flex-col gap-1 p-4">
           {tabs.map((tab) => (
             <NavLink

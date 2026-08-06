@@ -11,6 +11,7 @@ import { onboardingShowcase } from "@/lib/demo-data";
 import { completeOnboarding } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "@/components/product-image";
+import { LogoWordmark } from "@/components/logo";
 
 const features = [
   {
@@ -48,10 +49,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-3xl px-5 pt-12 sm:px-8 lg:px-10">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 lg:text-4xl">Forma</h1>
-            <p className="text-sm text-forma-muted lg:text-base">Your shopping copilot</p>
-          </div>
+          <LogoWordmark size="lg" />
           <button onClick={finish} className="text-sm font-medium text-forma-muted hover:text-gray-900">
             Skip
           </button>

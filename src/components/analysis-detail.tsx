@@ -19,6 +19,7 @@ import { cn, formatPrice, toArray } from "@/lib/utils";
 import { ProductLink } from "@/components/product-link";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
+import { LogoMark } from "@/components/logo";
 import { GUEST_INITIALS } from "@/lib/user";
 import { ScoreRing } from "@/components/analysis/score-ring";
 import { VerdictBadge } from "@/components/analysis/verdict-badge";
@@ -95,7 +96,7 @@ export function AnalysisDetail({
         <Link href="/home" className="rounded-xl p-2 text-forma-muted hover:bg-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <span className="text-base font-bold text-gray-900 lg:hidden">Forma</span>
+        <LogoMark size="sm" className="lg:hidden" />
         <Link
           href="/profile"
           className="h-9 w-9 overflow-hidden rounded-full bg-gradient-to-br from-violet-200 to-indigo-300 lg:hidden"
