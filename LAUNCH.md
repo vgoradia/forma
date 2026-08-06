@@ -16,7 +16,7 @@ Ship these so the product looks professional when you share it.
 - [x] Landing footer + JSON-LD SEO
 - [x] Demo page CTA → drives users to scan
 - [x] **Push to GitHub + redeploy on Vercel**
-- [ ] Confirm `NEXT_PUBLIC_APP_URL=https://www.shopwithforma.com` in Vercel env (see note below)
+- [x] Confirm `NEXT_PUBLIC_APP_URL=https://www.shopwithforma.com` in Vercel env
 
 ---
 

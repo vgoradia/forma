@@ -80,7 +80,7 @@ export default function AppHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [lastScan?.id, lastScan?.analysis?.identifiedProduct?.imageUrl, lastScan?.imagePreview]);
+  }, [lastScan]);
 
   const continueSearching =
     scans.length > 0 ? getContinueSearching(scans) : getDemoContinueSearching();
