@@ -25,6 +25,8 @@ import { ScoreRing } from "@/components/analysis/score-ring";
 import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
 import { isBookmarked, toggleBookmark } from "@/lib/storage";
+import { trackEvent } from "@/lib/analytics";
+import { buildShareUrl } from "@/lib/share-url";
 
 function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
   return (
@@ -63,13 +65,13 @@ export function AnalysisDetail({
   };
 
   const handleShare = async () => {
-    const url = scanId
-      ? `${window.location.origin}/analysis/${scanId}`
-      : window.location.href;
+    const path = scanId ? `/analysis/${scanId}` : "/analysis/demo";
+    const url = buildShareUrl(path);
     const title = `${product.brand} ${product.name} — Forma analysis`;
     const text = `${analysis.verdict.headline} Lowest price: ${formatPrice(analysis.lowestPrice.price)} at ${analysis.lowestPrice.retailer}.`;
 
     try {
+      trackEvent("share_analysis", { has_scan_id: Boolean(scanId) });
       if (navigator.share) {
         await navigator.share({ title, text, url });
         return;
@@ -92,6 +94,18 @@ export function AnalysisDetail({
 
   return (
     <PageContainer>
+      {!scanId && (
+        <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-center lg:mb-6">
+          <p className="text-sm font-medium text-gray-900">Demo analysis — see what Forma finds in seconds</p>
+          <Link
+            href="/scan"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-forma-primary hover:underline"
+          >
+            Scan your own product
+            <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+          </Link>
+        </div>
+      )}
       <div className="mb-4 flex items-center justify-between lg:mb-6">
         <Link href="/home" className="rounded-xl p-2 text-forma-muted hover:bg-white">
           <ArrowLeft className="h-5 w-5" />

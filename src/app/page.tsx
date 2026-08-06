@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getDisplayImageSrc } from "@/lib/image-proxy";
 import { LogoWordmark } from "@/components/logo";
+import { getAppUrl } from "@/lib/app-url";
 import {
   Camera,
   Tag,
@@ -64,8 +65,29 @@ const proof = [
 ];
 
 export default function LandingPage() {
+  const appUrl = getAppUrl();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Forma",
+    url: appUrl,
+    description:
+      "AI shopping copilot that identifies products, compares prices, finds dupes, and delivers a buy/wait/skip verdict.",
+    applicationCategory: "ShoppingApplication",
+    operatingSystem: "Web",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#f9fafb]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="sticky top-0 z-50 border-b border-forma-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/">
@@ -278,14 +300,32 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <LogoWordmark size="sm" />
             </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-forma-muted">
+              <Link href="/about" className="hover:text-gray-900">
+                About
+              </Link>
+              <Link href="/analysis/demo" className="hover:text-gray-900">
+                Demo
+              </Link>
+              <a
+                href="https://github.com/vgoradia/forma"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-900"
+              >
+                GitHub
+              </a>
+            </div>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-emerald-600" />
               <span className="text-sm text-forma-muted">
-                Private by design — scans stored locally on your device
+                Private by design — scans stored locally
               </span>
             </div>
-            <p className="text-xs text-forma-muted">© 2026 Forma</p>
           </div>
+          <p className="mx-auto mt-4 max-w-6xl text-center text-xs text-forma-muted">
+            © 2026 Forma · Built by Veer Goradia
+          </p>
         </section>
       </main>
     </div>

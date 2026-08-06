@@ -8,6 +8,7 @@ import { UploadZone } from "@/components/upload-zone";
 import type { ProductAnalysis } from "@/lib/types";
 import { saveScan } from "@/lib/storage";
 import { PageContainer } from "@/components/page-container";
+import { trackEvent } from "@/lib/analytics";
 
 const LOADING_STEPS = [
   "Identifying product...",
@@ -84,6 +85,8 @@ export function ScanContent() {
         savedAt: new Date().toISOString(),
         imagePreview: meta?.imagePreview,
       });
+
+      trackEvent("scan_completed", { source, product: data.identifiedProduct.brand });
 
       router.push(`/analysis/${data.id}`);
     } catch (err) {

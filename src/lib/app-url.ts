@@ -1,4 +1,4 @@
-const DEFAULT_APP_URL = "https://forma.app";
+const DEFAULT_APP_URL = "https://shopwithforma.com";
 
 export function getAppUrl(): string {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();

@@ -9,6 +9,7 @@ import type { ProductAnalysis } from "@/lib/types";
 import { generateMockAnalysis } from "@/lib/mock-analysis";
 import { PageContainer } from "@/components/page-container";
 import { getAnalysisHeroImage, fetchProductImageUrl } from "@/lib/product-images";
+import { trackEvent } from "@/lib/analytics";
 
 function loadScan(id: string): {
   analysis: ProductAnalysis | null;
@@ -32,6 +33,12 @@ function AnalysisContent({ id }: { id: string }) {
     () => loadScan(id).analysis
   );
   const [imagePreview] = useState<string | undefined>(() => loadScan(id).imagePreview);
+
+  useEffect(() => {
+    if (id === "demo") {
+      trackEvent("view_demo");
+    }
+  }, [id]);
 
   useEffect(() => {
     if (!analysis) return;

@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     "Upload any screenshot, link, or image. Forma identifies the product, compares prices, finds alternatives, and tells you whether to buy.",
   metadataBase: new URL(getAppUrl()),
   applicationName: "Forma",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+    shortcut: [{ url: "/favicon.ico" }],
+  },
   keywords: ["AI shopping", "price comparison", "fashion", "product finder", "shopping copilot"],
   openGraph: {
     title: "Forma — AI Shopping Copilot",

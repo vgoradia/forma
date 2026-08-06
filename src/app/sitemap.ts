@@ -3,7 +3,7 @@ import { getAppUrl } from "@/lib/app-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = getAppUrl();
-  const routes = ["", "/home", "/scan", "/onboarding", "/alerts", "/wardrobe", "/profile", "/analysis/demo"];
+  const routes = ["", "/about", "/home", "/scan", "/onboarding", "/alerts", "/wardrobe", "/profile", "/analysis/demo"];
 
   return routes.map((route) => ({
     url: `${baseUrl}${route}`,
