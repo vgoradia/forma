@@ -14,15 +14,15 @@ function loadScan(id: string): {
   analysis: ProductAnalysis | null;
   imagePreview?: string;
 } {
+  if (id === "demo") {
+    return { analysis: generateMockAnalysis("dress") };
+  }
   if (typeof window === "undefined") {
     return { analysis: null };
   }
   const stored = getScan(id);
   if (stored) {
     return { analysis: stored.analysis, imagePreview: stored.imagePreview };
-  }
-  if (id === "demo") {
-    return { analysis: generateMockAnalysis("dress") };
   }
   return { analysis: null };
 }
