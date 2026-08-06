@@ -109,7 +109,7 @@ export default function AppHomePage() {
         <div>
           <p className="text-sm text-forma-muted">{getGreeting()}, {GUEST_DISPLAY_NAME}</p>
           <div className="mt-1">
-            <LogoWordmark size="lg" />
+            <LogoWordmark size="lg" showTagline />
           </div>
         </div>
         <Link

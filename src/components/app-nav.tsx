@@ -72,7 +72,7 @@ export function AppNav() {
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-forma-border bg-white lg:flex">
         <Link href="/home" className="border-b border-forma-border px-6 py-5">
-          <LogoWordmark size="md" />
+          <LogoWordmark size="md" showTagline />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 p-4">
           {tabs.map((tab) => (

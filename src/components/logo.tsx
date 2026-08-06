@@ -1,103 +1,93 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-const sizes = {
-  sm: { mark: 28, lockup: 32 },
-  md: { mark: 36, lockup: 40 },
-  lg: { mark: 44, lockup: 52 },
+const heights = {
+  sm: 36,
+  md: 44,
+  lg: 56,
 } as const;
 
-type LogoSize = keyof typeof sizes;
-type LogoVariant = "mark" | "full" | "lockup";
+type LogoSize = keyof typeof heights;
 
-export function Logo({
-  variant = "lockup",
+export function LogoMark({
   size = "md",
   className,
   priority = false,
-  showTagline = true,
 }: {
-  variant?: LogoVariant;
   size?: LogoSize;
   className?: string;
   priority?: boolean;
-  showTagline?: boolean;
 }) {
-  if (variant === "full") {
-    return (
-      <Image
-        src="/forma-logo.png"
-        alt="Forma"
-        width={512}
-        height={512}
-        priority={priority}
-        className={cn("h-auto w-auto object-contain", className)}
-        style={{ height: sizes[size].lockup * 2.5, width: sizes[size].lockup * 2.5 }}
-      />
-    );
-  }
+  const h = heights[size];
+  return (
+    <Image
+      src="/forma-icon.png"
+      alt="Forma"
+      width={h}
+      height={h}
+      priority={priority}
+      className={cn("shrink-0 rounded-xl object-contain", className)}
+      style={{ width: h, height: h }}
+    />
+  );
+}
 
-  if (variant === "mark") {
-    const px = sizes[size].mark;
-    return (
-      <Image
-        src="/forma-icon.png"
-        alt="Forma"
-        width={px}
-        height={px}
-        priority={priority}
-        className={cn("shrink-0 rounded-xl object-cover", className)}
-        style={{ width: px, height: px }}
-      />
-    );
-  }
+export function LogoWordmark({
+  size = "md",
+  className,
+  showTagline = false,
+  priority = false,
+}: {
+  size?: LogoSize;
+  className?: string;
+  showTagline?: boolean;
+  priority?: boolean;
+}) {
+  const h = heights[size];
 
-  if (!showTagline) {
-    const h = sizes[size].lockup;
-    return (
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
       <Image
         src="/forma-logo.png"
         alt="Forma"
         width={h}
         height={h}
         priority={priority}
-        className={cn("shrink-0 rounded-xl object-contain", className)}
+        className="shrink-0 rounded-xl object-contain"
         style={{ width: h, height: h }}
       />
-    );
-  }
-
-  return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <Logo variant="mark" size={size} priority={priority} />
-      <div className="min-w-0">
-        <p className="font-bold leading-none text-gray-900">Forma</p>
-        <p className="mt-0.5 text-xs text-forma-muted">Shopping copilot</p>
-      </div>
+      {showTagline ? (
+        <p className="text-xs leading-snug text-forma-muted sm:text-sm">Shopping copilot</p>
+      ) : null}
     </div>
   );
 }
 
-export function LogoMark({
+/** Full logo tile — icon + Forma wordmark from the brand asset. */
+export function LogoFull({
   size = "md",
   className,
+  priority = false,
 }: {
   size?: LogoSize;
   className?: string;
+  priority?: boolean;
 }) {
-  return <Logo variant="mark" size={size} className={className} />;
+  const h = heights[size];
+  return (
+    <Image
+      src="/forma-logo.png"
+      alt="Forma"
+      width={h}
+      height={h}
+      priority={priority}
+      className={cn("shrink-0 rounded-2xl object-contain", className)}
+      style={{ width: h, height: h }}
+    />
+  );
 }
 
-export function LogoWordmark({
-  size = "md",
-  className,
-  showTagline = true,
-}: {
-  size?: LogoSize;
-  className?: string;
-  showTagline?: boolean;
-}) {
-  return (
-    <Logo variant="lockup" size={size} className={className} showTagline={showTagline} />
-  );
+// Back-compat alias used in a few places
+export function Logo(props: React.ComponentProps<typeof LogoWordmark>) {
+  return <LogoWordmark {...props} />;
 }

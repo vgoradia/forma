@@ -49,7 +49,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-3xl px-5 pt-12 sm:px-8 lg:px-10">
         <div className="flex items-center justify-between">
-          <LogoWordmark size="lg" />
+          <LogoWordmark size="lg" showTagline />
           <button onClick={finish} className="text-sm font-medium text-forma-muted hover:text-gray-900">
             Skip
           </button>

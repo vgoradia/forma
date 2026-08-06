@@ -69,7 +69,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-forma-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/">
-            <LogoWordmark size="md" showTagline={false} />
+            <LogoWordmark size="md" priority />
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
             <a href="#features" className="text-sm text-forma-muted hover:text-gray-900">
@@ -109,7 +109,7 @@ export default function LandingPage() {
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
               <div>
                 <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-sm text-indigo-700">
-                  <LogoMark size="sm" className="!h-6 !w-6 !rounded-lg" />
+                  <LogoMark size="sm" />
                   Free AI shopping copilot
                 </p>
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
@@ -268,7 +268,7 @@ export default function LandingPage() {
         <section className="border-t border-forma-border bg-white px-5 py-8 sm:px-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <div className="flex items-center gap-2">
-              <LogoWordmark size="sm" showTagline={false} />
+              <LogoWordmark size="sm" />
             </div>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-emerald-600" />
