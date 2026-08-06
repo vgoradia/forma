@@ -51,7 +51,8 @@ export function getSourceIcon(scan: StoredScan): string {
 }
 
 export function getProductName(scan: StoredScan): string {
-  const p = scan.analysis.identifiedProduct;
+  const p = scan.analysis?.identifiedProduct;
+  if (!p?.brand || !p?.name) return scan.label || "Saved scan";
   return `${p.brand} ${p.name}`;
 }
 
@@ -71,13 +72,13 @@ export function getContinueSearching(scans: StoredScan[]) {
 
 export function getPriceDropAlerts(scans: StoredScan[]) {
   return scans
-    .filter((s) => s.analysis.salePrediction.likelihood !== "low")
+    .filter((s) => s.analysis.salePrediction?.likelihood && s.analysis.salePrediction.likelihood !== "low")
     .slice(0, 6)
     .map((scan) => ({
       id: scan.id,
       name: getProductName(scan),
-      price: scan.analysis.lowestPrice.price,
-      subtitle: `Expected sale ${scan.analysis.salePrediction.predictedDrop.toLowerCase()}`,
+      price: scan.analysis.lowestPrice?.price,
+      subtitle: `Expected sale ${scan.analysis.salePrediction?.predictedDrop?.toLowerCase() ?? "soon"}`,
       imageUrl: getScanImage(scan),
       href: `/analysis/${scan.id}`,
     }));

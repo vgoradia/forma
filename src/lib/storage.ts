@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { ProductAnalysis } from "./types";
 import { notifyStorageChange, subscribeStorage } from "./storage-events";
+import { isValidStoredScan, sanitizeProductAnalysis } from "./scan-validation";
 
 const ONBOARDING_KEY = "forma_onboarding_complete";
 const SCANS_KEY = "forma_scans";
@@ -81,7 +82,13 @@ function trimScanForStorage(scan: StoredScan): StoredScan {
 function syncScansCache(raw: string | null) {
   cachedScansRaw = raw;
   try {
-    cachedScansList = raw ? (JSON.parse(raw) as StoredScan[]) : [];
+    const parsed = raw ? (JSON.parse(raw) as unknown[]) : [];
+    cachedScansList = parsed
+      .filter(isValidStoredScan)
+      .map((scan) => ({
+        ...scan,
+        analysis: sanitizeProductAnalysis(scan.analysis),
+      })) as StoredScan[];
     cachedLastScan = cachedScansList[0] ?? null;
   } catch {
     cachedScansList = [];

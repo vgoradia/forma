@@ -79,7 +79,7 @@ export default function AppHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [lastScan?.id, lastScan?.analysis.identifiedProduct.imageUrl, lastScan?.imagePreview]);
+  }, [lastScan?.id, lastScan?.analysis?.identifiedProduct?.imageUrl, lastScan?.imagePreview]);
 
   const continueSearching =
     scans.length > 0 ? getContinueSearching(scans) : getDemoContinueSearching();
@@ -171,7 +171,7 @@ export default function AppHomePage() {
                 {product.brand} {product.name}
               </p>
               <p className="mt-1 text-sm text-forma-muted">
-                {product.colors[0] ?? "—"} • {Math.round(product.confidence * 100)}% match
+                {product.colors?.[0] ?? "—"} • {Math.round((product.confidence ?? 0) * 100)}% match
               </p>
               <p className="mt-2 text-sm text-gray-700 lg:text-base">
                 Lowest price found:{" "}
