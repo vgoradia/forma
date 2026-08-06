@@ -15,8 +15,8 @@ Ship these so the product looks professional when you share it.
 - [x] OG image with real Forma logo
 - [x] Landing footer + JSON-LD SEO
 - [x] Demo page CTA → drives users to scan
-- [ ] **Push to GitHub + redeploy on Vercel** ← do this tonight
-- [ ] Confirm `NEXT_PUBLIC_APP_URL=https://shopwithforma.com` in Vercel env
+- [x] **Push to GitHub + redeploy on Vercel**
+- [ ] Confirm `NEXT_PUBLIC_APP_URL=https://www.shopwithforma.com` in Vercel env (see note below)
 
 ---
 
@@ -91,7 +91,7 @@ See `COLLEGE.md` for essay paragraphs and demo video script.
 |----------|----------|-------|
 | `ANTHROPIC_API_KEY` | Yes | your key |
 | `SERPER_API_KEY` | Yes | your key |
-| `NEXT_PUBLIC_APP_URL` | Yes | `https://shopwithforma.com` |
+| `NEXT_PUBLIC_APP_URL` | Yes | `https://www.shopwithforma.com` |
 | `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG` | Optional | e.g. `yourname-20` |
 
 ---

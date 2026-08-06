@@ -1,7 +1,7 @@
 /** Build a shareable URL with referral tracking for growth metrics. */
 export function buildShareUrl(path: string, origin?: string): string {
   const base = origin ?? (typeof window !== "undefined" ? window.location.origin : "");
-  const url = new URL(path, base || "https://shopwithforma.com");
+  const url = new URL(path, base || "https://www.shopwithforma.com");
 
   if (!url.searchParams.has("utm_source")) {
     url.searchParams.set("utm_source", "share");
