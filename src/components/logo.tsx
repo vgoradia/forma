@@ -2,9 +2,9 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const sizes = {
-  sm: { mark: 28, full: 96 },
-  md: { mark: 36, full: 120 },
-  lg: { mark: 44, full: 140 },
+  sm: { mark: 28, lockup: 32 },
+  md: { mark: 36, lockup: 40 },
+  lg: { mark: 44, lockup: 52 },
 } as const;
 
 type LogoSize = keyof typeof sizes;
@@ -28,11 +28,11 @@ export function Logo({
       <Image
         src="/forma-logo.png"
         alt="Forma"
-        width={sizes[size].full}
-        height={sizes[size].full}
+        width={512}
+        height={512}
         priority={priority}
-        className={cn("object-contain", className)}
-        style={{ width: sizes[size].full, height: sizes[size].full }}
+        className={cn("h-auto w-auto object-contain", className)}
+        style={{ height: sizes[size].lockup * 2.5, width: sizes[size].lockup * 2.5 }}
       />
     );
   }
@@ -40,27 +40,39 @@ export function Logo({
   if (variant === "mark") {
     const px = sizes[size].mark;
     return (
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-xl bg-[#1A1B26] text-white",
-          className
-        )}
+      <Image
+        src="/forma-icon.png"
+        alt="Forma"
+        width={px}
+        height={px}
+        priority={priority}
+        className={cn("shrink-0 rounded-xl object-cover", className)}
         style={{ width: px, height: px }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-mark.svg" alt="" aria-hidden className="h-[62%] w-[62%] object-contain" />
-      </div>
+      />
+    );
+  }
+
+  if (!showTagline) {
+    const h = sizes[size].lockup;
+    return (
+      <Image
+        src="/forma-logo.png"
+        alt="Forma"
+        width={h}
+        height={h}
+        priority={priority}
+        className={cn("shrink-0 rounded-xl object-contain", className)}
+        style={{ width: h, height: h }}
+      />
     );
   }
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      <Logo variant="mark" size={size} />
+      <Logo variant="mark" size={size} priority={priority} />
       <div className="min-w-0">
         <p className="font-bold leading-none text-gray-900">Forma</p>
-        {showTagline ? (
-          <p className="mt-0.5 text-xs text-forma-muted">Shopping copilot</p>
-        ) : null}
+        <p className="mt-0.5 text-xs text-forma-muted">Shopping copilot</p>
       </div>
     </div>
   );
@@ -85,5 +97,7 @@ export function LogoWordmark({
   className?: string;
   showTagline?: boolean;
 }) {
-  return <Logo variant="lockup" size={size} className={className} showTagline={showTagline} />;
+  return (
+    <Logo variant="lockup" size={size} className={className} showTagline={showTagline} />
+  );
 }
