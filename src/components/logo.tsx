@@ -43,22 +43,21 @@ export function LogoWordmark({
   showTagline?: boolean;
   priority?: boolean;
 }) {
-  const h = heights[size];
+  const titleSizes = {
+    sm: "text-base",
+    md: "text-lg",
+    lg: "text-xl",
+  } as const;
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <Image
-        src="/forma-logo.png"
-        alt="Forma"
-        width={h}
-        height={h}
-        priority={priority}
-        className="shrink-0 rounded-xl object-contain"
-        style={{ width: h, height: h }}
-      />
-      {showTagline ? (
-        <p className="text-xs leading-snug text-forma-muted sm:text-sm">Shopping copilot</p>
-      ) : null}
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <LogoMark size={size} priority={priority} />
+      <div className="min-w-0">
+        <p className={cn("font-bold leading-none text-gray-900", titleSizes[size])}>Forma</p>
+        {showTagline ? (
+          <p className="mt-0.5 text-xs leading-snug text-forma-muted sm:text-sm">Shopping copilot</p>
+        ) : null}
+      </div>
     </div>
   );
 }
