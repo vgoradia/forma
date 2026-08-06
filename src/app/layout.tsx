@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { getAppUrl } from "@/lib/app-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   title: "Forma — AI Shopping Copilot",
   description:
     "Upload any screenshot, link, or image. Forma identifies the product, compares prices, finds alternatives, and tells you whether to buy.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(getAppUrl()),
   applicationName: "Forma",
   keywords: ["AI shopping", "price comparison", "fashion", "product finder", "shopping copilot"],
   openGraph: {

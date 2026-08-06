@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://forma.app";
+import { getAppUrl } from "@/lib/app-url";
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = getAppUrl();
   return {
     rules: {
       userAgent: "*",
