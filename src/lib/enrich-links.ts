@@ -12,6 +12,7 @@ import {
   mergeListingImage,
   normalizeImageUrl,
 } from "./serper";
+import { resolveProductImageUrl, resolveQueryImageUrl } from "./resolve-image";
 import { coercePrice } from "./utils";
 
 function getUserQuery(input?: AnalyzeInput): string | undefined {
@@ -60,6 +61,20 @@ async function enrichImages(
       normalizeImageUrl(lookup.relaxed[0]?.imageUrl);
   }
 
+  if (!productImage) {
+    productImage = await resolveProductImageUrl(
+      {
+        brand: product.brand,
+        name: product.name,
+        colors: product.colors,
+        category: product.category,
+        retailer: analysis.lowestPrice.retailer,
+        query: userQuery,
+      },
+      input
+    );
+  }
+
   const alternatives = analysis.alternatives.map((alt) => {
     const existing = normalizeImageUrl(alt.imageUrl);
     return existing ? { ...alt, imageUrl: existing } : alt;
@@ -73,7 +88,9 @@ async function enrichImages(
         outfitSuggestions[index] = { ...outfit, imageUrl: existing };
         return;
       }
-      const imageUrl = await findImageForQuery(serperKey, outfit.name);
+      const imageUrl =
+        (await findImageForQuery(serperKey, outfit.name)) ??
+        (await resolveQueryImageUrl(outfit.name));
       outfitSuggestions[index] = { ...outfit, imageUrl };
     })
   );
@@ -86,7 +103,9 @@ async function enrichImages(
         wardrobeMatches[index] = { ...match, imageUrl: existing };
         return;
       }
-      const imageUrl = await findImageForQuery(serperKey, match.item);
+      const imageUrl =
+        (await findImageForQuery(serperKey, match.item)) ??
+        (await resolveQueryImageUrl(match.item));
       wardrobeMatches[index] = { ...match, imageUrl };
     })
   );
@@ -95,12 +114,86 @@ async function enrichImages(
     productImage = normalizeImageUrl(alternatives[0].imageUrl);
   }
 
+  return applyProductImage(analysis, productImage, alternatives, outfitSuggestions, wardrobeMatches);
+}
+
+async function enrichImagesWithoutSerper(
+  analysis: ProductAnalysis,
+  input?: AnalyzeInput
+): Promise<ProductAnalysis> {
+  const product = analysis.identifiedProduct;
+  const userQuery = getUserQuery(input);
+
+  let productImage = normalizeImageUrl(product.imageUrl);
+  if (!productImage) {
+    productImage = await resolveProductImageUrl(
+      {
+        brand: product.brand,
+        name: product.name,
+        colors: product.colors,
+        category: product.category,
+        retailer: analysis.lowestPrice.retailer,
+        query: userQuery,
+      },
+      input
+    );
+  }
+
+  const alternatives = await Promise.all(
+    analysis.alternatives.map(async (alt) => {
+      const existing = normalizeImageUrl(alt.imageUrl);
+      if (existing) return { ...alt, imageUrl: existing };
+      const imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
+      return { ...alt, imageUrl: imageUrl ?? "" };
+    })
+  );
+
+  const outfitSuggestions = await Promise.all(
+    analysis.outfitSuggestions.map(async (outfit) => {
+      const existing = normalizeImageUrl(outfit.imageUrl);
+      if (existing) return { ...outfit, imageUrl: existing };
+      const imageUrl = await resolveQueryImageUrl(outfit.name);
+      return { ...outfit, imageUrl };
+    })
+  );
+
+  const wardrobeMatches = await Promise.all(
+    analysis.wardrobeMatches.map(async (match) => {
+      const existing = normalizeImageUrl(match.imageUrl);
+      if (existing) return { ...match, imageUrl: existing };
+      const imageUrl = await resolveQueryImageUrl(match.item);
+      return { ...match, imageUrl };
+    })
+  );
+
+  if (!productImage && alternatives[0]?.imageUrl) {
+    productImage = normalizeImageUrl(alternatives[0].imageUrl);
+  }
+
+  return applyProductImage(analysis, productImage, alternatives, outfitSuggestions, wardrobeMatches);
+}
+
+function applyProductImage(
+  analysis: ProductAnalysis,
+  productImage: string | undefined,
+  alternatives: ProductAnalysis["alternatives"],
+  outfitSuggestions: ProductAnalysis["outfitSuggestions"],
+  wardrobeMatches: ProductAnalysis["wardrobeMatches"]
+): ProductAnalysis {
   return {
     ...analysis,
     identifiedProduct: {
-      ...product,
+      ...analysis.identifiedProduct,
       imageUrl: productImage,
     },
+    lowestPrice: {
+      ...analysis.lowestPrice,
+      imageUrl: analysis.lowestPrice.imageUrl ?? productImage,
+    },
+    prices: analysis.prices.map((price) => ({
+      ...price,
+      imageUrl: price.imageUrl ?? productImage,
+    })),
     alternatives,
     outfitSuggestions,
     wardrobeMatches,
@@ -234,7 +327,13 @@ export async function enrichAnalysisLinks(
       }
 
       if (!imageUrl && serperKey) {
-        imageUrl = await findImageForQuery(serperKey, `${alt.brand} ${alt.name}`);
+        imageUrl =
+          (await findImageForQuery(serperKey, `${alt.brand} ${alt.name}`)) ??
+          (await resolveQueryImageUrl(`${alt.brand} ${alt.name}`));
+      }
+
+      if (!imageUrl) {
+        imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
       }
 
       return { ...alt, url, price, priceVerified, imageUrl: imageUrl ?? "" };
@@ -265,6 +364,8 @@ export async function enrichAnalysisLinks(
 
   if (serperKey) {
     enriched = await enrichImages(enriched, input, serperKey, heroImageFromListing);
+  } else {
+    enriched = await enrichImagesWithoutSerper(enriched, input);
   }
 
   return enriched;

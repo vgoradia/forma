@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findImageForQuery, findProductImage, getSerperApiKey } from "@/lib/serper";
+import { resolveProductImageUrl, resolveQueryImageUrl } from "@/lib/resolve-image";
 
 export async function POST(request: NextRequest) {
-  const serperKey = getSerperApiKey();
-  if (!serperKey) {
-    return NextResponse.json({ error: "Serper not configured" }, { status: 503 });
-  }
-
   try {
     const body = (await request.json()) as {
       brand?: string;
@@ -22,12 +17,14 @@ export async function POST(request: NextRequest) {
       name: body.name ?? "",
       colors: Array.isArray(body.colors) ? body.colors : [],
       category: body.category ?? "",
+      retailer: body.retailer,
+      query: body.query,
     };
 
     const imageUrl =
-      (await findProductImage(serperKey, product, body.query, body.retailer)) ??
-      (body.query ? await findImageForQuery(serperKey, body.query) : undefined) ??
-      (await findImageForQuery(serperKey, `${product.brand} ${product.name}`.trim()));
+      (await resolveProductImageUrl(product)) ??
+      (body.query ? await resolveQueryImageUrl(body.query) : undefined) ??
+      (await resolveQueryImageUrl(`${product.brand} ${product.name}`.trim()));
 
     if (!imageUrl) {
       return NextResponse.json({ error: "No image found" }, { status: 404 });

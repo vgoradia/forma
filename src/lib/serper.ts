@@ -21,7 +21,15 @@ interface SerperShoppingItem {
 
 interface SerperImageItem {
   imageUrl?: string;
+  image?: string;
+  thumbnail?: string;
   title?: string;
+}
+
+interface SerperSearchResponse {
+  knowledgeGraph?: { imageUrl?: string; image?: string };
+  shopping?: SerperShoppingItem[];
+  answerBox?: { imageUrl?: string; image?: string };
 }
 
 interface ProductMatchInfo {
@@ -38,21 +46,28 @@ const COLOR_WORDS = [
 ];
 
 async function serperPost<T>(endpoint: string, body: object, apiKey: string): Promise<T | null> {
-  const response = await fetch(`https://google.serper.dev/${endpoint}`, {
-    method: "POST",
-    headers: {
-      "X-API-KEY": apiKey.trim(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ gl: "us", hl: "en", num: 15, ...body }),
-  });
+  try {
+    const response = await fetch(`https://google.serper.dev/${endpoint}`, {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey.trim(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ gl: "us", hl: "en", num: 15, ...body }),
+      signal: AbortSignal.timeout(12_000),
+    });
 
-  if (!response.ok) {
-    console.error(`Serper ${endpoint} failed:`, response.status);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error(`Serper ${endpoint} failed:`, response.status, detail.slice(0, 200));
+      return null;
+    }
+
+    return (await response.json()) as T;
+  } catch (error) {
+    console.error(`Serper ${endpoint} error:`, error);
     return null;
   }
-
-  return (await response.json()) as T;
 }
 
 export function parseSerperPrice(priceStr?: string | number): number | undefined {
@@ -128,8 +143,16 @@ export function scoreListingTitle(
 export function extractItemImageUrl(item: SerperShoppingItem): string | undefined {
   return (
     normalizeImageUrl(item.imageUrl) ??
-    normalizeImageUrl(item.thumbnail) ??
-    normalizeImageUrl(item.image)
+    normalizeImageUrl(item.image) ??
+    normalizeImageUrl(item.thumbnail)
+  );
+}
+
+function extractSerperImageItem(item: SerperImageItem): string | undefined {
+  return (
+    normalizeImageUrl(item.imageUrl) ??
+    normalizeImageUrl(item.image) ??
+    normalizeImageUrl(item.thumbnail)
   );
 }
 
@@ -291,6 +314,31 @@ export async function findBestListing(
   return null;
 }
 
+export async function findImageViaWebSearch(
+  apiKey: string,
+  query: string
+): Promise<string | undefined> {
+  const trimmed = query.trim();
+  if (!trimmed) return undefined;
+
+  const data = await serperPost<SerperSearchResponse>("search", { q: trimmed }, apiKey);
+  if (!data) return undefined;
+
+  const kgImage =
+    normalizeImageUrl(data.knowledgeGraph?.imageUrl) ??
+    normalizeImageUrl(data.knowledgeGraph?.image);
+  if (kgImage) return kgImage;
+
+  const shoppingImage = findFirstShoppingImage(data.shopping ?? []);
+  if (shoppingImage) return shoppingImage;
+
+  const answerImage =
+    normalizeImageUrl(data.answerBox?.imageUrl) ?? normalizeImageUrl(data.answerBox?.image);
+  if (answerImage) return answerImage;
+
+  return undefined;
+}
+
 export async function findImageForQuery(
   apiKey: string,
   query: string
@@ -300,16 +348,20 @@ export async function findImageForQuery(
 
   const data = await serperPost<{ images?: SerperImageItem[] }>(
     "images",
-    { q: `${trimmed} fashion product` },
+    { q: trimmed, num: 10 },
     apiKey
   );
 
   for (const item of data?.images ?? []) {
-    const url = normalizeImageUrl(item.imageUrl);
+    const url = extractSerperImageItem(item);
     if (url) return url;
   }
 
-  return undefined;
+  const webImage = await findImageViaWebSearch(apiKey, trimmed);
+  if (webImage) return webImage;
+
+  const shoppingItems = await fetchShoppingItems(apiKey, trimmed);
+  return findFirstShoppingImage(shoppingItems);
 }
 
 export async function findProductImage(
@@ -318,6 +370,7 @@ export async function findProductImage(
   userQuery?: string,
   retailer?: string
 ): Promise<string | undefined> {
+  const query = buildSearchQuery(product, userQuery);
   const { heroImage, withPrice, relaxed, items } = await lookupProductListings(
     apiKey,
     product,
@@ -333,7 +386,10 @@ export async function findProductImage(
   const fromItems = findFirstShoppingImage(items);
   if (fromItems) return fromItems;
 
-  return findImageForQuery(apiKey, buildSearchQuery(product, userQuery));
+  const fromImages = await findImageForQuery(apiKey, query);
+  if (fromImages) return fromImages;
+
+  return findImageViaWebSearch(apiKey, query);
 }
 
 export function getSerperApiKey(): string | undefined {
