@@ -3,6 +3,8 @@ import {
   buildAlternativeUrl,
   buildProductSearchUrl,
   buildSecondhandUrl,
+  isGenericSearchUrl,
+  isProductDetailUrl,
 } from "./product-links";
 import {
   findBestListing,
@@ -41,9 +43,57 @@ function sanitizeRetailerPrice(price: RetailerPrice, fallback?: RetailerPrice): 
   };
 }
 
-function isGenericSearchUrl(url?: string): boolean {
-  if (!url) return true;
-  return /\/search|\/sr\?|\/w\?q=|searchTerm=|search\?|\/s\?k=|browse\/search/i.test(url);
+async function resolveToProductUrl(
+  apiKey: string,
+  retailer: string,
+  product: ProductAnalysis["identifiedProduct"] | { brand: string; name: string; colors: string[]; category: string },
+  userQuery: string | undefined,
+  current: RetailerPrice
+): Promise<RetailerPrice> {
+  if (isProductDetailUrl(current.url)) return current;
+
+  const listingTitle = current.listingTitle;
+  const retailersToTry = [retailer, product.brand].filter(
+    (label, index, arr) => label && arr.indexOf(label) === index
+  );
+
+  for (const label of retailersToTry) {
+    const listing = await findRetailerLinkViaWebSearch(
+      apiKey,
+      label,
+      product,
+      listingTitle,
+      userQuery
+    );
+    if (listing && isProductDetailUrl(listing.url)) {
+      const listingPrice = validPrice(listing.price);
+      return {
+        ...current,
+        url: listing.url,
+        retailer: listing.source || label,
+        listingTitle: listing.title ?? listingTitle,
+        price: listingPrice ?? current.price,
+        priceVerified: listingPrice !== undefined ? true : current.priceVerified,
+        imageUrl: listing.imageUrl ?? current.imageUrl,
+      };
+    }
+  }
+
+  const fallback = await findProductLinkViaWebSearch(apiKey, product, userQuery, retailer);
+  if (fallback && isProductDetailUrl(fallback.url)) {
+    const listingPrice = validPrice(fallback.price);
+    return {
+      ...current,
+      url: fallback.url,
+      retailer: fallback.source || current.retailer,
+      listingTitle: fallback.title ?? listingTitle,
+      price: listingPrice ?? current.price,
+      priceVerified: listingPrice !== undefined ? true : current.priceVerified,
+      imageUrl: fallback.imageUrl ?? current.imageUrl,
+    };
+  }
+
+  return current;
 }
 
 function retailerDomain(label: string): string | undefined {
@@ -82,7 +132,11 @@ function applyDirectShoppingLinks(
     return { lowestPrice, prices };
   }
 
-  const best = mergeListingImage(directListings[0], directListings, lookup.items);
+  const best = mergeListingImage(
+    directListings.find((listing) => isProductDetailUrl(listing.url)) ?? directListings[0],
+    directListings,
+    lookup.items
+  );
   const bestPrice = validPrice(best.price);
 
   const nextLowest: RetailerPrice = {
@@ -130,61 +184,21 @@ function applyDirectShoppingLinks(
 
 async function applyWebSearchLinks(
   apiKey: string,
-  lookup: ShoppingLookupResult,
+  _lookup: ShoppingLookupResult,
   product: ProductAnalysis["identifiedProduct"],
   userQuery: string | undefined,
   lowestPrice: RetailerPrice,
   prices: RetailerPrice[]
 ): Promise<{ lowestPrice: RetailerPrice; prices: RetailerPrice[]; matchedListingTitle?: string }> {
   let matchedListingTitle: string | undefined;
-  let nextLowest = { ...lowestPrice };
-  let nextPrices = [...prices];
+  let nextLowest = await resolveToProductUrl(apiKey, lowestPrice.retailer, product, userQuery, lowestPrice);
+  matchedListingTitle = nextLowest.listingTitle;
 
-  if (isGenericSearchUrl(nextLowest.url)) {
-    const best =
-      (await findProductLinkViaWebSearch(apiKey, product, userQuery, nextLowest.retailer)) ??
-      (await findProductLinkViaWebSearch(apiKey, product, userQuery, product.brand));
-
-    if (best) {
-      nextLowest = {
-        ...nextLowest,
-        url: best.url,
-        retailer: best.source || nextLowest.retailer,
-        listingTitle: best.title,
-        priceVerified: validPrice(best.price) !== undefined ? true : nextLowest.priceVerified,
-        price: validPrice(best.price) ?? nextLowest.price,
-      };
-      matchedListingTitle = best.title;
-    }
-  }
-
-  nextPrices = await Promise.all(
-    nextPrices.map(async (priceRow) => {
-      if (!isGenericSearchUrl(priceRow.url)) return priceRow;
-
-      const shoppingMatch = lookup.items.find((item) => {
-        const source = (item.source ?? "").toLowerCase();
-        const label = priceRow.retailer.toLowerCase();
-        return source.includes(label) || label.includes(source);
-      });
-
-      const retailerListing = await findRetailerLinkViaWebSearch(
-        apiKey,
-        priceRow.retailer,
-        product,
-        shoppingMatch?.title,
-        userQuery
-      );
-
-      if (!retailerListing) return priceRow;
-
-      return {
-        ...priceRow,
-        url: retailerListing.url,
-        listingTitle: retailerListing.title,
-        priceVerified: validPrice(retailerListing.price) !== undefined,
-        price: validPrice(retailerListing.price) ?? priceRow.price,
-      };
+  let nextPrices = await Promise.all(
+    prices.map(async (priceRow, index) => {
+      if (isProductDetailUrl(priceRow.url)) return priceRow;
+      if (index >= 3) return priceRow;
+      return resolveToProductUrl(apiKey, priceRow.retailer, product, userQuery, priceRow);
     })
   );
 
@@ -376,7 +390,8 @@ export async function enrichAnalysisLinks(
     const validListings = lookup.withPrice.filter((l) => validPrice(l.price) !== undefined);
 
     if (validListings.length > 0) {
-      const best = mergeListingImage(validListings[0], validListings, lookup.items);
+      const pdpListing = validListings.find((listing) => isProductDetailUrl(listing.url));
+      const best = mergeListingImage(pdpListing ?? validListings[0], validListings, lookup.items);
       const bestPrice = validPrice(best.price)!;
       heroImageFromListing = best.imageUrl;
 
@@ -446,7 +461,7 @@ export async function enrichAnalysisLinks(
     prices = linked.prices;
     matchedListingTitle = linked.matchedListingTitle ?? matchedListingTitle;
 
-    if (isGenericSearchUrl(lowestPrice.url) || prices.some((p) => isGenericSearchUrl(p.url))) {
+    if (isGenericSearchUrl(lowestPrice.url) || !isProductDetailUrl(lowestPrice.url) || prices.some((p) => !isProductDetailUrl(p.url))) {
       const webLinked = await applyWebSearchLinks(
         serperKey,
         lookup,
@@ -505,17 +520,15 @@ export async function enrichAnalysisLinks(
       }
 
       if (isGenericSearchUrl(url) && serperKey) {
-        const webListing = await findRetailerLinkViaWebSearch(
+        const resolved = await resolveToProductUrl(
           serperKey,
           alt.brand,
           { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
           `${alt.brand} ${alt.name}`,
-          `${alt.brand} ${alt.name}`
+          { retailer: alt.brand, price, url, inStock: true, priceVerified }
         );
-        if (webListing) {
-          url = webListing.url;
-          imageUrl = imageUrl ?? webListing.imageUrl;
-        }
+        url = resolved.url;
+        imageUrl = imageUrl ?? resolved.imageUrl;
       }
 
       if (!imageUrl && serperKey) {

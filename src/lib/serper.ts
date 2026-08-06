@@ -1,4 +1,4 @@
-import { RETAILER_DOMAINS, resolveRetailerLink } from "./product-links";
+import { RETAILER_DOMAINS, isGenericSearchUrl, isProductDetailUrl, resolveRetailerLink } from "./product-links";
 import { coercePrice } from "./utils";
 
 export interface SerperListing {
@@ -230,13 +230,16 @@ export function pickDirectShoppingListings(
     .map((item) => {
       const listing = rawItemToListing(item, product);
       if (!listing) return null;
+      if (isGenericSearchUrl(listing.url) && !isProductDetailUrl(listing.url)) return null;
+
       const score = scoreListingTitle(listing.title, product, userQuery);
+      const pdpBoost = isProductDetailUrl(listing.url) ? 100 : 0;
       const withImage = listing.imageUrl
         ? listing
         : sharedImage
           ? { ...listing, imageUrl: sharedImage }
           : listing;
-      return { listing: withImage, score };
+      return { listing: withImage, score: score + pdpBoost };
     })
     .filter((x): x is { listing: SerperListing; score: number } => x !== null)
     .sort((a, b) => b.score - a.score)
@@ -271,7 +274,10 @@ function scoreAndSortListings(
       const listing = itemToListing(item, minScore, product, userQuery, requirePrice);
       if (!listing) return null;
       const domainBoost = domain && listing.url.includes(domain) ? 20 : 0;
-      const score = scoreListingTitle(listing.title, product, userQuery) + domainBoost;
+      const pdpBoost = isProductDetailUrl(listing.url) ? 80 : 0;
+      const genericPenalty = isGenericSearchUrl(listing.url) ? -100 : 0;
+      const score =
+        scoreListingTitle(listing.title, product, userQuery) + domainBoost + pdpBoost + genericPenalty;
       const withImage =
         listing.imageUrl || sharedImage
           ? { ...listing, imageUrl: listing.imageUrl ?? sharedImage }
@@ -366,8 +372,17 @@ function scoreOrganicProductLink(
   userQuery?: string
 ): number {
   let score = scoreListingTitle(title, product, userQuery);
-  if (/\/t\/|\/dp\/|\/p\/|\/product\/|\/products\//i.test(url)) score += 60;
-  if (/\/launch\/|\/w\/|\/search|\/sr\?|\/s\?k=|searchTerm=|browse\/search|\/plp\/|\/collection/i.test(url)) score -= 25;
+
+  if (isProductDetailUrl(url)) score += 100;
+  if (isGenericSearchUrl(url)) score -= 80;
+
+  if (/\/t\/|\/dp\/|\/p\/|\/product\/|\/products\//i.test(url)) score += 40;
+  if (/\/launch\/|\/w\/|\/search|\/sr\?|\/s\?k=|searchTerm=|browse\/search|\/plp\/|\/collection/i.test(url)) {
+    score -= 40;
+  }
+  if (/nike\.com\/t\//i.test(url)) score += 50;
+  if (/nike\.com\/w/i.test(url)) score -= 60;
+
   const brandKey = product.brand.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (brandKey && url.toLowerCase().includes(brandKey)) score += 15;
   return score;
@@ -412,7 +427,9 @@ function pickBestOrganicListing(
     .sort((a, b) => b.score - a.score);
 
   const best = ranked[0];
-  if (!best || best.score < 20) return null;
+  if (!best) return null;
+  if (isProductDetailUrl(best.listing.url)) return best.listing;
+  if (best.score < 30) return null;
   return best.listing;
 }
 
@@ -462,13 +479,30 @@ export async function findRetailerLinkViaWebSearch(
   if (!domain) return null;
 
   const baseQuery = listingTitle?.trim() || buildSearchQuery(product, userQuery);
-  const data = await serperPost<{ organic?: SerperOrganicResult[] }>(
-    "search",
-    { q: `${baseQuery} site:${domain}`, num: 8 },
-    apiKey
-  );
+  const queries = [`${baseQuery} site:${domain}`];
 
-  return pickBestOrganicListing(data?.organic, product, userQuery, retailer);
+  if (domain === "nike.com") {
+    queries.unshift(`${baseQuery} site:nike.com/t`);
+    queries.push(`${product.brand} ${product.name} white site:nike.com/t`);
+  }
+  if (domain === "footlocker.com") {
+    queries.push(`${baseQuery} site:footlocker.com/product`);
+  }
+
+  const uniqueQueries = queries.filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+  for (const query of uniqueQueries) {
+    const data = await serperPost<{ organic?: SerperOrganicResult[] }>(
+      "search",
+      { q: query, num: 10 },
+      apiKey
+    );
+
+    const listing = pickBestOrganicListing(data?.organic, product, userQuery, retailer);
+    if (listing) return listing;
+  }
+
+  return null;
 }
 
 export async function findImageViaWebSearch(

@@ -160,6 +160,60 @@ export function isGoogleUrl(url: string): boolean {
   }
 }
 
+/** True when the URL lands on a specific product page (not search/category). */
+export function isProductDetailUrl(url?: string): boolean {
+  if (!url?.trim() || !url.startsWith("http") || isGoogleUrl(url)) return false;
+
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.includes("nike.com") && /\/t\/[^/]+\/[a-z0-9-]+/i.test(path)) return true;
+    if (host.includes("amazon.") && /\/dp\/|\/gp\/product\//i.test(path)) return true;
+    if (host.includes("footlocker") && /\/product\//i.test(path)) return true;
+    if (host.includes("finishline") && /\/product\//i.test(path)) return true;
+    if (host.includes("jdsports") && /\/product\//i.test(path)) return true;
+    if (host.includes("hibbett") && /\/product\//i.test(path)) return true;
+    if (host.includes("dickssportinggoods") && /\/p\//i.test(path)) return true;
+    if (host.includes("nordstrom.com") && /\/s\/[^/]+\/\d+/i.test(path)) return true;
+    if (host.includes("stockx.com") && path.split("/").filter(Boolean).length >= 1 && !path.includes("/search")) {
+      return true;
+    }
+    if (host.includes("adidas.") && /\/[^/]+\/[A-Z0-9]+(?:\.html)?$/i.test(path)) return true;
+
+    if (/\/product\/[^/?#]+/i.test(path) && !/\/products\?/i.test(path)) return true;
+    if (/\/p\/[^/?#]+/i.test(path)) return true;
+    if (/\/dp\/[A-Z0-9]{6,}/i.test(path)) return true;
+    if (/\/t\/[^/]+\/[a-z0-9-]+/i.test(path)) return true;
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** True for search pages, category browse URLs, and other non-PDP links. */
+export function isGenericSearchUrl(url?: string): boolean {
+  if (!url?.trim()) return true;
+  if (isProductDetailUrl(url)) return false;
+
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    const host = parsed.hostname.toLowerCase();
+    const full = url.toLowerCase();
+
+    if (host.includes("nike.com") && (path.startsWith("/w") || full.includes("/w?q="))) return true;
+
+    return /\/search|\/sr\?|searchterm=|\/s\?k=|browse\/search|\/plp\/|\/collection\/|\/browse\/|\/w\?q=/i.test(
+      full
+    );
+  } catch {
+    return true;
+  }
+}
+
 /** Unwrap Google redirect URLs and keep direct retailer product links. */
 export function resolveRetailerLink(raw?: string): string | undefined {
   if (!raw?.trim()) return undefined;
