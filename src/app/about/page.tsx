@@ -20,6 +20,7 @@ const stack = [
   "Next.js 16 + TypeScript",
   "Anthropic Claude (product ID + verdicts)",
   "Serper (live prices & images)",
+  "Supabase Auth (Google sign-in)",
   "Vercel (hosting + analytics)",
   "Cloudflare (DNS + domain)",
 ];
@@ -35,7 +36,7 @@ export default function AboutPage() {
             <LogoWordmark size="md" />
           </Link>
           <Link
-            href="/scan"
+            href="/login?next=/scan"
             className="rounded-xl bg-forma-primary px-4 py-2 text-sm font-semibold text-white hover:bg-forma-primary-dark"
           >
             Try Forma
@@ -135,7 +136,7 @@ export default function AboutPage() {
           <h2 className="text-xl font-bold">Try it on something you&apos;re thinking about buying</h2>
           <p className="mt-2 text-sm text-indigo-100">Upload a screenshot. Get your verdict in under 20 seconds.</p>
           <Link
-            href="/scan"
+            href="/login?next=/scan"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-forma-primary hover:shadow-lg"
           >
             Scan free

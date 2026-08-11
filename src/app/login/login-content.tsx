@@ -22,7 +22,7 @@ export function LoginContent() {
     <>
       <h1 className="text-2xl font-bold text-gray-900">Sign in to Forma</h1>
       <p className="mt-2 text-sm leading-relaxed text-forma-muted">
-        Save your scan history across devices and unlock account features as we ship them.
+        Create a free account with Google, or continue as a guest and start scanning right away.
       </p>
 
       <div className="mt-8 space-y-3">
@@ -36,7 +36,7 @@ export function LoginContent() {
       </div>
 
       <p className="mt-4 text-center text-xs text-forma-muted">
-        Google sign-in creates an account automatically and saves your scan history.
+        Google sign-in creates your account automatically. Scan history saves locally for now.
       </p>
     </>
   );

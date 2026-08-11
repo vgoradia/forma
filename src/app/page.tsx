@@ -106,8 +106,14 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-3">
             <Link
-              href="/login?next=/scan"
+              href="/login"
               className="hidden text-sm font-medium text-forma-muted hover:text-gray-900 sm:inline"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/login?next=/scan"
+              className="hidden text-sm font-medium text-forma-muted hover:text-gray-900 md:inline"
             >
               Try now
             </Link>
