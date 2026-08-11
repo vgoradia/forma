@@ -27,7 +27,9 @@ import {
 import { countWardrobeItems } from "@/lib/scan-helpers";
 import { PageContainer } from "@/components/page-container";
 import { LogoMark } from "@/components/logo";
-import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
+import { GoogleSignInButton, UserAvatar } from "@/components/auth-ui";
+import { useAuth } from "@/components/auth-provider";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 function SettingsRow({
   icon: Icon,
@@ -95,11 +97,21 @@ function ToggleRow({
   );
 }
 
+function authStatusFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const auth = new URLSearchParams(window.location.search).get("auth");
+  if (auth === "error") return "Google sign-in failed. Try again.";
+  if (auth === "unconfigured") return "Sign-in is not configured on this deployment yet.";
+  return null;
+}
+
 export default function ProfilePage() {
   const scans = useScans();
   const [prefs, setPrefs] = useState<UserPrefs>(() => getPrefs());
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(authStatusFromUrl);
   const wardrobeCount = countWardrobeItems(scans);
+  const profile = useUserProfile();
+  const { signOut } = useAuth();
 
   const updatePref = (key: keyof UserPrefs, value: boolean) => {
     const next = { ...prefs, [key]: value };
@@ -111,6 +123,12 @@ export default function ProfilePage() {
     if (!window.confirm("Delete all scan history and saved items? This cannot be undone.")) return;
     clearAllScans();
     setStatus("Scan history deleted.");
+    setTimeout(() => setStatus(null), 2500);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setStatus("Signed out.");
     setTimeout(() => setStatus(null), 2500);
   };
 
@@ -130,13 +148,33 @@ export default function ProfilePage() {
 
       <div className="mt-6 rounded-2xl border border-forma-border bg-white p-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-200 to-indigo-300 text-lg font-semibold text-indigo-700">
-            {GUEST_INITIALS}
-          </div>
+          <UserAvatar
+            initials={profile.initials}
+            avatarUrl={profile.avatarUrl}
+            name={profile.displayName}
+          />
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-gray-900">{GUEST_DISPLAY_NAME}</p>
-            <p className="text-sm text-forma-muted">Free plan • {scans.length} scans saved</p>
+            <p className="font-semibold text-gray-900">{profile.displayName}</p>
+            <p className="truncate text-sm text-forma-muted">
+              {profile.isAuthenticated
+                ? profile.email ?? "Signed in with Google"
+                : `Guest · ${scans.length} scans saved locally`}
+            </p>
           </div>
+        </div>
+
+        <div className="mt-4">
+          {profile.isAuthenticated ? (
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="w-full rounded-2xl border border-forma-border bg-white py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              Sign out
+            </button>
+          ) : (
+            <GoogleSignInButton redirectTo="/profile" label="Sign in with Google" />
+          )}
         </div>
       </div>
 

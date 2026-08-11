@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { AuthProvider } from "@/components/auth-provider";
 import { getAppUrl } from "@/lib/app-url";
 import "./globals.css";
 
@@ -61,7 +62,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <AnalyticsProvider />
       </body>
     </html>

@@ -29,7 +29,7 @@ import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
 import { LogoWordmark } from "@/components/logo";
 import { fetchProductImageUrl } from "@/lib/product-images";
-import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -44,6 +44,7 @@ export default function AppHomePage() {
   const lastScan = useLastScan();
   const scans = useScans();
   const prefs = useMemo(() => getPrefs(), []);
+  const profile = useUserProfile();
 
   useEffect(() => {
     if (!isOnboardingComplete()) {
@@ -107,18 +108,28 @@ export default function AppHomePage() {
     <PageContainer>
       <div className="mb-6 flex items-start justify-between lg:mb-8">
         <div>
-          <p className="text-sm text-forma-muted">{getGreeting()}, {GUEST_DISPLAY_NAME}</p>
+          <p className="text-sm text-forma-muted">{getGreeting()}, {profile.displayName}</p>
           <div className="mt-1">
             <LogoWordmark size="lg" showTagline />
           </div>
         </div>
         <Link
           href="/profile"
-          className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-violet-200 to-indigo-300 ring-2 ring-white lg:hidden"
+          className="h-10 w-10 overflow-hidden rounded-full ring-2 ring-white lg:hidden"
         >
-          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-indigo-700">
-            {GUEST_INITIALS}
-          </div>
+          {profile.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.avatarUrl}
+              alt={profile.displayName}
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-200 to-indigo-300 text-xs font-semibold text-indigo-700">
+              {profile.initials}
+            </div>
+          )}
         </Link>
       </div>
 

@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { Home, Camera, Shirt, Bell, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoWordmark } from "@/components/logo";
-import { GUEST_DISPLAY_NAME, GUEST_INITIALS } from "@/lib/user";
+import { UserAvatar } from "@/components/auth-ui";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 const tabs = [
   { href: "/home", label: "Home", icon: Home },
@@ -67,6 +68,7 @@ function NavLink({
 
 export function AppNav() {
   const pathname = usePathname();
+  const profile = useUserProfile();
 
   return (
     <>
@@ -89,12 +91,17 @@ export function AppNav() {
             href="/profile"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-gray-50"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-200 to-indigo-300 text-xs font-semibold text-indigo-700">
-              {GUEST_INITIALS}
-            </div>
+            <UserAvatar
+              size="sm"
+              initials={profile.initials}
+              avatarUrl={profile.avatarUrl}
+              name={profile.displayName}
+            />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">{GUEST_DISPLAY_NAME}</p>
-              <p className="text-xs text-forma-muted">Free plan</p>
+              <p className="truncate text-sm font-medium text-gray-900">{profile.displayName}</p>
+              <p className="text-xs text-forma-muted">
+                {profile.isAuthenticated ? "Signed in" : "Guest · Free plan"}
+              </p>
             </div>
           </Link>
         </div>

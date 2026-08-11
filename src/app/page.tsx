@@ -106,13 +106,13 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-3">
             <Link
-              href="/scan"
+              href="/login?next=/scan"
               className="hidden text-sm font-medium text-forma-muted hover:text-gray-900 sm:inline"
             >
               Try now
             </Link>
             <Link
-              href="/onboarding"
+              href="/login?next=/onboarding"
               className="rounded-xl bg-forma-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-forma-primary-dark"
             >
               Get started free
@@ -144,7 +144,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <Link
-                    href="/scan?mode=upload"
+                    href="/login?next=/scan"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-forma-primary px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-forma-primary-dark"
                   >
                     Try free — scan now
@@ -157,7 +157,7 @@ export default function LandingPage() {
                     See live demo
                   </Link>
                 </div>
-                <p className="mt-4 text-sm text-forma-muted">No signup • Works on mobile & desktop</p>
+                <p className="mt-4 text-sm text-forma-muted">Sign in with Google or try as guest • Works on mobile & desktop</p>
 
                 <div className="mt-8 grid grid-cols-3 gap-3">
                   {proof.map(({ icon: Icon, label, detail }) => (
@@ -271,7 +271,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/scan"
+                href="/login?next=/scan"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-base font-semibold text-forma-primary transition hover:shadow-lg"
               >
                 Start scanning free

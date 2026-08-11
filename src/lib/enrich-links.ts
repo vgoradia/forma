@@ -190,11 +190,10 @@ async function applyWebSearchLinks(
   lowestPrice: RetailerPrice,
   prices: RetailerPrice[]
 ): Promise<{ lowestPrice: RetailerPrice; prices: RetailerPrice[]; matchedListingTitle?: string }> {
-  let matchedListingTitle: string | undefined;
-  let nextLowest = await resolveToProductUrl(apiKey, lowestPrice.retailer, product, userQuery, lowestPrice);
-  matchedListingTitle = nextLowest.listingTitle;
+  const nextLowest = await resolveToProductUrl(apiKey, lowestPrice.retailer, product, userQuery, lowestPrice);
+  const matchedListingTitle = nextLowest.listingTitle;
 
-  let nextPrices = await Promise.all(
+  const nextPrices = await Promise.all(
     prices.map(async (priceRow, index) => {
       if (isProductDetailUrl(priceRow.url)) return priceRow;
       if (index >= 3) return priceRow;
