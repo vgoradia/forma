@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { LogoWordmark } from "@/components/logo";
 import { UserAvatar } from "@/components/auth-ui";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 const tabs = [
   { href: "/home", label: "Home", icon: Home },
@@ -69,6 +70,7 @@ function NavLink({
 export function AppNav() {
   const pathname = usePathname();
   const profile = useUserProfile();
+  const { plan } = useSubscriptionPlan();
 
   return (
     <>
@@ -100,7 +102,11 @@ export function AppNav() {
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-gray-900">{profile.displayName}</p>
               <p className="text-xs text-forma-muted">
-                {profile.isAuthenticated ? "Signed in" : "Guest · Free plan"}
+                {profile.isAuthenticated
+                  ? plan === "plus"
+                    ? "Forma Plus"
+                    : "Signed in"
+                  : "Guest · Free plan"}
               </p>
             </div>
           </Link>

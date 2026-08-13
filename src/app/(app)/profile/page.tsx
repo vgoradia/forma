@@ -30,6 +30,8 @@ import { LogoMark } from "@/components/logo";
 import { GoogleSignInButton, UserAvatar } from "@/components/auth-ui";
 import { useAuth } from "@/components/auth-provider";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
+import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 
 function SettingsRow({
   icon: Icon,
@@ -112,6 +114,8 @@ export default function ProfilePage() {
   const wardrobeCount = countWardrobeItems(scans);
   const profile = useUserProfile();
   const { signOut } = useAuth();
+  const { plan, configured: billingConfigured, loading: planLoading } = useSubscriptionPlan();
+  const plusPrice = getFormaPlusPriceLabel();
 
   const updatePref = (key: keyof UserPrefs, value: boolean) => {
     const next = { ...prefs, [key]: value };
@@ -132,9 +136,37 @@ export default function ProfilePage() {
     setTimeout(() => setStatus(null), 2500);
   };
 
-  const handlePlusClick = () => {
-    setStatus("Forma Plus is coming soon — unlimited scans, deeper wardrobe sync, and priority alerts.");
-    setTimeout(() => setStatus(null), 3500);
+  const handlePlusClick = async () => {
+    if (!profile.isAuthenticated) {
+      setStatus("Sign in with Google first to upgrade to Forma Plus.");
+      setTimeout(() => setStatus(null), 3500);
+      return;
+    }
+
+    if (!billingConfigured) {
+      setStatus("Billing is being set up — check back soon.");
+      setTimeout(() => setStatus(null), 3500);
+      return;
+    }
+
+    if (plan === "plus") {
+      setStatus("You're already on Forma Plus. Thanks for supporting Forma!");
+      setTimeout(() => setStatus(null), 3500);
+      return;
+    }
+
+    setStatus("Redirecting to secure checkout…");
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error ?? "Checkout failed");
+      }
+      window.location.href = data.url;
+    } catch {
+      setStatus("Could not start checkout. Try again in a moment.");
+      setTimeout(() => setStatus(null), 3500);
+    }
   };
 
   return (
@@ -157,7 +189,9 @@ export default function ProfilePage() {
             <p className="font-semibold text-gray-900">{profile.displayName}</p>
             <p className="truncate text-sm text-forma-muted">
               {profile.isAuthenticated
-                ? profile.email ?? "Signed in with Google"
+                ? plan === "plus"
+                  ? "Forma Plus"
+                  : profile.email ?? "Signed in with Google"
                 : `Guest · ${scans.length} scans saved locally`}
             </p>
           </div>
@@ -287,10 +321,11 @@ export default function ProfilePage() {
         </p>
         <button
           type="button"
-          onClick={handlePlusClick}
-          className="mt-4 w-full rounded-2xl bg-forma-primary py-3.5 text-sm font-semibold text-white"
+          onClick={() => void handlePlusClick()}
+          disabled={planLoading}
+          className="mt-4 w-full rounded-2xl bg-forma-primary py-3.5 text-sm font-semibold text-white disabled:opacity-60"
         >
-          Upgrade to Forma Plus
+          {plan === "plus" ? "Forma Plus active" : `Upgrade to Forma Plus · ${plusPrice}`}
         </button>
       </div>
     </PageContainer>
