@@ -446,7 +446,10 @@ export async function enrichAnalysisLinks(
         heroImageFromListing = merged.imageUrl;
         lowestPrice = {
           ...lowestPrice,
-          url: merged.url || lowestPrice.url,
+          url:
+            merged.url && isProductDetailUrl(merged.url)
+              ? merged.url
+              : finalizeRetailerUrl(lowestPrice.url, lowestPrice.retailer, product.brand, product.name),
           price: fallbackPrice ?? lowestPrice.price,
           priceVerified: fallbackPrice !== undefined,
           listingTitle: merged.title,
@@ -511,7 +514,7 @@ export async function enrichAnalysisLinks(
       let priceVerified = false;
       let imageUrl = normalizeImageUrl(alt.imageUrl);
 
-      if (serperKey && index < 3) {
+      if (serperKey && index < 5) {
         const listing = await findBestListing(
           serperKey,
           { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },

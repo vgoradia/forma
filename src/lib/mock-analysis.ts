@@ -90,10 +90,10 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
   const product = { ...base.identifiedProduct!, imageUrl: images.hero };
 
   const prices = [
+    { retailer: "Shopbop", price: product.estimatedRetailPrice - 30, url: "#", inStock: true, shipping: "Free" },
     { retailer: "Nordstrom", price: product.estimatedRetailPrice, url: "#", inStock: true, shipping: "Free" },
-    { retailer: "Shopbop", price: product.estimatedRetailPrice - 15, url: "#", inStock: true },
     { retailer: "Revolve", price: product.estimatedRetailPrice + 10, url: "#", inStock: false },
-    { retailer: "Brand Direct", price: product.estimatedRetailPrice - 30, url: "#", inStock: true, shipping: "Free over $150" },
+    { retailer: product.brand, price: product.estimatedRetailPrice - 15, url: "#", inStock: true, shipping: "Free over $150" },
   ].sort((a, b) => a.price - b.price);
 
   const alternatives: ProductAnalysis["alternatives"] =
@@ -206,7 +206,7 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
 
   const resolvedAlternatives = alternatives.map((alt, i) => ({
     ...alt,
-    imageUrl: images.alternatives[i] ?? "",
+    imageUrl: images.alternatives[i] ?? undefined,
     url: resolveAlternativeUrl(alt.url, alt.brand, alt.name),
   }));
 
@@ -243,19 +243,49 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
     reviewSummary: {
       overallRating: 4.3,
       totalReviews: 847,
-      pros: [
-        "Excellent fit and drape",
-        "Versatile for multiple occasions",
-        "Quality materials that hold up over time",
-        "Timeless design won't feel dated",
-      ],
-      cons: [
-        "Runs slightly oversized — size down if between sizes",
-        "Dry clean only adds to long-term cost",
-        "Limited color options available",
-      ],
+      pros:
+        scenario === "sneakers"
+          ? [
+              "Premium leather quality",
+              "Iconic minimalist design",
+              "Comfortable for all-day wear",
+              "Versatile with casual and smart outfits",
+            ]
+          : scenario === "dress"
+            ? [
+                "Beautiful drape and flattering fit",
+                "Versatile for day-to-night styling",
+                "True-to-color burgundy shade",
+                "Adjustable straps for custom fit",
+              ]
+            : [
+                "Excellent fit and drape",
+                "Versatile for multiple occasions",
+                "Quality materials that hold up over time",
+                "Timeless design won't feel dated",
+              ],
+      cons:
+        scenario === "sneakers"
+          ? [
+              "High price for minimal branding",
+              "White leather scuffs easily",
+              "Limited arch support for long walks",
+            ]
+          : scenario === "dress"
+            ? [
+                "Delicate silk requires careful handling",
+                "Bias cut can cling — size carefully",
+                "Dry clean only adds to long-term cost",
+              ]
+            : [
+                "Runs slightly oversized — size down if between sizes",
+                "Dry clean only adds to long-term cost",
+                "Limited color options available",
+              ],
       summary:
-        "Buyers consistently praise the quality-to-style ratio. Most reviewers say they'd purchase again, though sizing can be tricky for first-time buyers.",
+        scenario === "sneakers"
+          ? "Buyers love the clean aesthetic and leather quality, but many note you're paying heavily for the logo. Consider alternatives if value is the priority."
+          : "Buyers consistently praise the quality-to-style ratio. Most reviewers say they'd purchase again, though sizing and care require attention.",
       qualityScore: 88,
       valueScore: scenario === "sneakers" ? 62 : 79,
     },
@@ -293,11 +323,24 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
       reasoning:
         "Historical data shows this brand runs seasonal promotions. Current price is near recent lows — waiting 2-3 weeks could save 15-25%.",
     },
-    stylingTips: [
-      "Roll sleeves once for a relaxed, intentional look",
-      "Layer over monochrome outfits to let the piece be the focal point",
-      "Pair with textured fabrics (linen, ribbed knits) for visual interest",
-    ],
+    stylingTips:
+      scenario === "blazer"
+        ? [
+            "Roll sleeves once for a relaxed, intentional look",
+            "Layer over monochrome outfits to let the piece be the focal point",
+            "Pair with textured fabrics (linen, ribbed knits) for visual interest",
+          ]
+        : scenario === "dress"
+          ? [
+              "Add delicate layered jewelry to complement the cowl neckline",
+              "Pair with strappy heels for evening or white sneakers for day",
+              "Throw on a cropped leather jacket to edge up the silhouette",
+            ]
+          : [
+              "Keep them pristine — white leather elevates any outfit instantly",
+              "Pair with slim chinos or tailored denim for a clean line",
+              "Skip heavy patterns; let the sneakers anchor a minimal look",
+            ],
     wardrobeMatches: [
       { item: "White sneakers", compatibility: "high", note: "Classic smart-casual combo", imageUrl: img("1549298916-b41d501d3772", 200, 200) },
       { item: "Dark wash jeans", compatibility: "high", note: "Effortless everyday pairing", imageUrl: img("1594938298603-c8148c4dae35", 200, 200) },

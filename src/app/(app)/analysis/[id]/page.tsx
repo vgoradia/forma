@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AnalysisDetail } from "@/components/analysis-detail";
@@ -33,6 +33,11 @@ function AnalysisContent({ id }: { id: string }) {
     () => loadScan(id).analysis
   );
   const [imagePreview] = useState<string | undefined>(() => loadScan(id).imagePreview);
+  const backfillAttempted = useRef(false);
+
+  useEffect(() => {
+    backfillAttempted.current = false;
+  }, [id]);
 
   useEffect(() => {
     if (id === "demo") {
@@ -41,28 +46,58 @@ function AnalysisContent({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
-    if (!analysis) return;
+    if (!analysis || backfillAttempted.current) return;
+
     const hero = getAnalysisHeroImage(analysis, imagePreview);
-    if (hero) return;
+    const missingAltIndexes = analysis.alternatives
+      .map((alt, index) => (!alt.imageUrl?.trim() ? index : -1))
+      .filter((index) => index >= 0);
 
+    if (hero && missingAltIndexes.length === 0) return;
+
+    backfillAttempted.current = true;
     let cancelled = false;
+
     void (async () => {
-      const imageUrl = await fetchProductImageUrl(analysis);
-      if (!imageUrl || cancelled) return;
+      let next = analysis;
 
-      const updated = {
-        ...analysis,
-        identifiedProduct: { ...analysis.identifiedProduct, imageUrl },
-        lowestPrice: {
-          ...analysis.lowestPrice,
-          imageUrl: analysis.lowestPrice.imageUrl ?? imageUrl,
-        },
-      };
-      setAnalysis(updated);
+      if (!hero) {
+        const imageUrl = await fetchProductImageUrl(analysis);
+        if (imageUrl && !cancelled) {
+          next = {
+            ...next,
+            identifiedProduct: { ...next.identifiedProduct, imageUrl },
+            lowestPrice: {
+              ...next.lowestPrice,
+              imageUrl: next.lowestPrice.imageUrl ?? imageUrl,
+            },
+          };
+        }
+      }
 
-      const stored = getScan(id);
-      if (stored) {
-        saveScan({ ...stored, analysis: updated });
+      if (missingAltIndexes.length > 0 && !cancelled) {
+        const alternatives = [...next.alternatives];
+        await Promise.all(
+          missingAltIndexes.map(async (index) => {
+            const alt = alternatives[index];
+            const imageUrl = await fetchProductImageUrl(next, `${alt.brand} ${alt.name}`);
+            if (imageUrl) {
+              alternatives[index] = { ...alt, imageUrl };
+            }
+          })
+        );
+        next = { ...next, alternatives };
+      }
+
+      if (next === analysis || cancelled) return;
+
+      setAnalysis(next);
+
+      if (id !== "demo") {
+        const stored = getScan(id);
+        if (stored) {
+          saveScan({ ...stored, analysis: next });
+        }
       }
     })();
 

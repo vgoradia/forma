@@ -102,7 +102,7 @@ export function AnalysisDetail({
         <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-center lg:mb-6">
           <p className="text-sm font-medium text-gray-900">Demo analysis — see what Forma finds in seconds</p>
           <Link
-            href="/scan"
+            href="/login?next=/scan"
             className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-forma-primary hover:underline"
           >
             Scan your own product

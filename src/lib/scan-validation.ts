@@ -1,4 +1,9 @@
 import type { ProductAnalysis } from "./types";
+import {
+  finalizeAlternativeUrl,
+  finalizeRetailerUrl,
+  resolveSecondhandUrl,
+} from "./product-links";
 
 function hasObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -45,6 +50,16 @@ export function isValidStoredScan(value: unknown): value is {
 
 export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnalysis {
   const product = analysis.identifiedProduct;
+  const brand = product.brand;
+  const name = product.name;
+
+  const lowestPrice = analysis.lowestPrice
+    ? {
+        ...analysis.lowestPrice,
+        url: finalizeRetailerUrl(analysis.lowestPrice.url, analysis.lowestPrice.retailer, brand, name),
+      }
+    : analysis.lowestPrice;
+
   return {
     ...analysis,
     identifiedProduct: {
@@ -54,7 +69,29 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
       style: Array.isArray(product.style) ? product.style : [],
       confidence: typeof product.confidence === "number" ? product.confidence : 0,
     },
-    alternatives: Array.isArray(analysis.alternatives) ? analysis.alternatives : [],
+    lowestPrice,
+    prices: Array.isArray(analysis.prices)
+      ? analysis.prices.map((price) => ({
+          ...price,
+          url: finalizeRetailerUrl(price.url, price.retailer, brand, name),
+        }))
+      : [],
+    alternatives: Array.isArray(analysis.alternatives)
+      ? analysis.alternatives.map((alt) => ({
+          ...alt,
+          url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
+          imageUrl: alt.imageUrl?.trim() || undefined,
+        }))
+      : [],
+    secondhand: analysis.secondhand
+      ? {
+          ...analysis.secondhand,
+          platforms: (analysis.secondhand.platforms ?? []).map((platform) => ({
+            ...platform,
+            url: resolveSecondhandUrl(platform.url, platform.name, brand, name),
+          })),
+        }
+      : { available: false, platforms: [] },
     wardrobeMatches: Array.isArray(analysis.wardrobeMatches) ? analysis.wardrobeMatches : [],
     outfitSuggestions: Array.isArray(analysis.outfitSuggestions) ? analysis.outfitSuggestions : [],
     salePrediction: analysis.salePrediction ?? {

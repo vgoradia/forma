@@ -45,6 +45,11 @@ export default function OnboardingPage() {
     router.push("/home");
   };
 
+  const signIn = () => {
+    completeOnboarding();
+    router.push("/login?next=/home");
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-3xl px-5 pt-12 sm:px-8 lg:px-10">
@@ -122,7 +127,7 @@ export default function OnboardingPage() {
             Continue
           </button>
           <button
-            onClick={finish}
+            onClick={signIn}
             className="flex-1 rounded-2xl border border-forma-border py-4 text-sm font-semibold text-forma-primary"
           >
             Sign in
@@ -141,7 +146,7 @@ export default function OnboardingPage() {
         </p>
         <p className="mt-2 pb-10 text-center text-xs text-forma-muted lg:pb-16 lg:text-sm">
           Already have an account?{" "}
-          <button onClick={finish} className="font-semibold text-forma-primary">
+          <button onClick={signIn} className="font-semibold text-forma-primary">
             Sign in
           </button>
         </p>
