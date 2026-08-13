@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { LogoWordmark } from "@/components/logo";
 import { UserAvatar } from "@/components/auth-ui";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { FormaPlusNavPromo } from "@/components/forma-plus-cta";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 const tabs = [
@@ -89,6 +90,7 @@ export function AppNav() {
           ))}
         </nav>
         <div className="border-t border-forma-border p-4">
+          <FormaPlusNavPromo />
           <Link
             href="/profile"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-gray-50"

@@ -26,6 +26,7 @@ import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
 import { isBookmarked, toggleBookmark } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
+import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
 import { buildShareUrl } from "@/lib/share-url";
 
 function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
@@ -385,10 +386,12 @@ export function AnalysisDetail({
         </Card>
       </div>
 
-      <Card title="Verdict" className="mb-6">
+      <Card title="Verdict" className="mb-4 lg:mb-6">
         <p className="text-sm font-semibold text-gray-900 lg:text-base">{analysis.verdict.headline}</p>
         <p className="mt-2 text-xs leading-relaxed text-forma-muted lg:text-sm">{analysis.verdict.reasoning}</p>
       </Card>
+
+      <FormaPlusAnalysisUpsell />
     </PageContainer>
   );
 }

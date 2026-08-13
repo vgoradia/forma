@@ -28,10 +28,10 @@ import { countWardrobeItems } from "@/lib/scan-helpers";
 import { PageContainer } from "@/components/page-container";
 import { LogoMark } from "@/components/logo";
 import { GoogleSignInButton, UserAvatar } from "@/components/auth-ui";
+import { FormaPlusBanner } from "@/components/forma-plus-cta";
 import { useAuth } from "@/components/auth-provider";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
-import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 
 function SettingsRow({
   icon: Icon,
@@ -114,8 +114,7 @@ export default function ProfilePage() {
   const wardrobeCount = countWardrobeItems(scans);
   const profile = useUserProfile();
   const { signOut } = useAuth();
-  const { plan, configured: billingConfigured, loading: planLoading } = useSubscriptionPlan();
-  const plusPrice = getFormaPlusPriceLabel();
+  const { plan } = useSubscriptionPlan();
 
   const updatePref = (key: keyof UserPrefs, value: boolean) => {
     const next = { ...prefs, [key]: value };
@@ -136,39 +135,6 @@ export default function ProfilePage() {
     setTimeout(() => setStatus(null), 2500);
   };
 
-  const handlePlusClick = async () => {
-    if (!profile.isAuthenticated) {
-      setStatus("Sign in with Google first to upgrade to Forma Plus.");
-      setTimeout(() => setStatus(null), 3500);
-      return;
-    }
-
-    if (!billingConfigured) {
-      setStatus("Billing is being set up — check back soon.");
-      setTimeout(() => setStatus(null), 3500);
-      return;
-    }
-
-    if (plan === "plus") {
-      setStatus("You're already on Forma Plus. Thanks for supporting Forma!");
-      setTimeout(() => setStatus(null), 3500);
-      return;
-    }
-
-    setStatus("Redirecting to secure checkout…");
-    try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        throw new Error(data.error ?? "Checkout failed");
-      }
-      window.location.href = data.url;
-    } catch {
-      setStatus("Could not start checkout. Try again in a moment.");
-      setTimeout(() => setStatus(null), 3500);
-    }
-  };
-
   return (
     <PageContainer>
       <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Settings</h1>
@@ -177,6 +143,8 @@ export default function ProfilePage() {
       {status && (
         <p className="mt-4 rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">{status}</p>
       )}
+
+      <FormaPlusBanner variant="hero" className="mt-6" />
 
       <div className="mt-6 rounded-2xl border border-forma-border bg-white p-4">
         <div className="flex items-center gap-4">
@@ -311,23 +279,15 @@ export default function ProfilePage() {
         </section>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-forma-border bg-white p-5 lg:max-w-xl">
-        <div className="mb-3 flex items-center gap-2">
-          <LogoMark sizePx={32} />
-          <h3 className="font-semibold text-gray-900">Forma Plus</h3>
+      {plan === "plus" && (
+        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 lg:max-w-xl">
+          <div className="mb-1 flex items-center gap-2">
+            <LogoMark sizePx={32} />
+            <h3 className="font-semibold text-gray-900">Forma Plus active</h3>
+          </div>
+          <p className="text-xs text-forma-muted">Thanks for supporting Forma — unlimited scans and Plus features are yours.</p>
         </div>
-        <p className="text-xs leading-relaxed text-forma-muted">
-          Unlimited searches, advanced wardrobe analysis, AI stylist, and priority sale predictions.
-        </p>
-        <button
-          type="button"
-          onClick={() => void handlePlusClick()}
-          disabled={planLoading}
-          className="mt-4 w-full rounded-2xl bg-forma-primary py-3.5 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {plan === "plus" ? "Forma Plus active" : `Upgrade to Forma Plus · ${plusPrice}`}
-        </button>
-      </div>
+      )}
     </PageContainer>
   );
 }

@@ -8,6 +8,7 @@ import { UploadZone } from "@/components/upload-zone";
 import type { ProductAnalysis } from "@/lib/types";
 import { saveScan } from "@/lib/storage";
 import { PageContainer } from "@/components/page-container";
+import { FormaPlusBanner } from "@/components/forma-plus-cta";
 import { trackEvent } from "@/lib/analytics";
 
 const LOADING_STEPS = [
@@ -112,6 +113,8 @@ export function ScanContent() {
           <p className="text-xs text-forma-muted">Upload, link, or describe a product</p>
         </div>
       </div>
+
+      <FormaPlusBanner variant="compact" className="mb-6" headline="Plus members scan unlimited" />
 
       <UploadZone
         onAnalyze={handleAnalyze}

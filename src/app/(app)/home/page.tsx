@@ -27,6 +27,7 @@ import { HorizontalSection } from "@/components/home/horizontal-section";
 import { ProductCard } from "@/components/home/product-card";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
+import { FormaPlusBanner } from "@/components/forma-plus-cta";
 import { LogoWordmark } from "@/components/logo";
 import { fetchProductImageUrl } from "@/lib/product-images";
 import { useUserProfile } from "@/hooks/use-user-profile";
@@ -163,6 +164,8 @@ export default function AppHomePage() {
           </Link>
         </div>
       </div>
+
+      <FormaPlusBanner variant="compact" className="mb-8" headline="Scan unlimited products with Forma Plus" />
 
       {lastScan && product && lowest ? (
         <Link
