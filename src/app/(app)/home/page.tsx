@@ -165,7 +165,7 @@ export default function AppHomePage() {
         </div>
       </div>
 
-      <FormaPlusBanner variant="compact" className="mb-8" headline="Scan unlimited products with Forma Plus" />
+      <FormaPlusBanner variant="hero" className="mb-8" headline="Scan unlimited products with Forma Plus" />
 
       {lastScan && product && lowest ? (
         <Link

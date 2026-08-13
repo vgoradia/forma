@@ -26,7 +26,10 @@ import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
 import { isBookmarked, toggleBookmark } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
-import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
+import {
+  FormaPlusAnalysisUpsell,
+  FormaPlusMobileSticky,
+} from "@/components/forma-plus-cta";
 import { buildShareUrl } from "@/lib/share-url";
 
 function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
@@ -94,7 +97,7 @@ export function AnalysisDetail({
       : 0;
 
   return (
-    <PageContainer>
+    <PageContainer className="pb-28 lg:pb-6">
       {!scanId && (
         <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-center lg:mb-6">
           <p className="text-sm font-medium text-gray-900">Demo analysis — see what Forma finds in seconds</p>
@@ -392,6 +395,7 @@ export function AnalysisDetail({
       </Card>
 
       <FormaPlusAnalysisUpsell />
+      <FormaPlusMobileSticky />
     </PageContainer>
   );
 }
