@@ -428,9 +428,7 @@ function pickBestOrganicListing(
 
   const best = ranked[0];
   if (!best) return null;
-  if (isProductDetailUrl(best.listing.url)) return best.listing;
-  if (best.score < 30) return null;
-  return best.listing;
+  return isProductDetailUrl(best.listing.url) ? best.listing : null;
 }
 
 export async function findProductLinkViaWebSearch(
@@ -476,7 +474,9 @@ export async function findRetailerLinkViaWebSearch(
   userQuery?: string
 ): Promise<SerperListing | null> {
   const domain = getDomainForLabel(retailer);
-  if (!domain) return null;
+  if (!domain) {
+    return findProductLinkViaWebSearch(apiKey, product, userQuery, retailer);
+  }
 
   const baseQuery = listingTitle?.trim() || buildSearchQuery(product, userQuery);
   const queries = [`${baseQuery} site:${domain}`];

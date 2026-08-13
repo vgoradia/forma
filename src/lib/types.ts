@@ -13,7 +13,7 @@ export interface Alternative {
   name: string;
   brand: string;
   price: number;
-  imageUrl: string;
+  imageUrl?: string;
   url: string;
   matchScore: number;
   reason: string;

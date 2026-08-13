@@ -3,6 +3,8 @@ import {
   buildAlternativeUrl,
   buildProductSearchUrl,
   buildSecondhandUrl,
+  finalizeAlternativeUrl,
+  finalizeRetailerUrl,
   isGenericSearchUrl,
   isProductDetailUrl,
 } from "./product-links";
@@ -141,7 +143,7 @@ function applyDirectShoppingLinks(
 
   const nextLowest: RetailerPrice = {
     ...lowestPrice,
-    url: best.url || lowestPrice.url,
+    url: isProductDetailUrl(best.url) ? best.url : lowestPrice.url,
     retailer: best.source || lowestPrice.retailer,
     price: bestPrice ?? lowestPrice.price,
     priceVerified: bestPrice !== undefined ? true : lowestPrice.priceVerified,
@@ -165,9 +167,10 @@ function applyDirectShoppingLinks(
     if (!match) return priceRow;
 
     const matchedPrice = validPrice(match.price);
+    const nextUrl = isProductDetailUrl(match.url) ? match.url : priceRow.url;
     return {
       ...priceRow,
-      url: match.url,
+      url: nextUrl,
       price: matchedPrice ?? priceRow.price,
       priceVerified: matchedPrice !== undefined,
       listingTitle: match.title ?? shoppingMatch?.title,
@@ -312,7 +315,7 @@ async function enrichImagesWithoutSerper(
       const existing = normalizeImageUrl(alt.imageUrl);
       if (existing) return { ...alt, imageUrl: existing };
       const imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
-      return { ...alt, imageUrl: imageUrl ?? "" };
+      return { ...alt, imageUrl: imageUrl || undefined };
     })
   );
 
@@ -397,7 +400,7 @@ export async function enrichAnalysisLinks(
       lowestPrice = {
         retailer: best.source || retailer,
         price: bestPrice,
-        url: best.url,
+        url: isProductDetailUrl(best.url) ? best.url : lowestPrice.url,
         inStock: true,
         priceVerified: true,
         listingTitle: best.title,
@@ -411,7 +414,7 @@ export async function enrichAnalysisLinks(
         return {
           retailer: merged.source,
           price: validPrice(merged.price)!,
-          url: merged.url,
+          url: isProductDetailUrl(merged.url) ? merged.url : buildProductSearchUrl(merged.source, product.brand, product.name),
           inStock: true,
           priceVerified: true,
           listingTitle: merged.title,
@@ -479,9 +482,17 @@ export async function enrichAnalysisLinks(
     }
   }
 
-  if (!lowestPrice.url || lowestPrice.url === "#" || isGenericSearchUrl(lowestPrice.url)) {
-    lowestPrice.url = buildProductSearchUrl(lowestPrice.retailer, product.brand, product.name);
-  }
+  lowestPrice.url = finalizeRetailerUrl(
+    lowestPrice.url,
+    lowestPrice.retailer,
+    product.brand,
+    product.name
+  );
+
+  prices = prices.map((priceRow) => ({
+    ...priceRow,
+    url: finalizeRetailerUrl(priceRow.url, priceRow.retailer, product.brand, product.name),
+  }));
 
   if (!validPrice(lowestPrice.price)) {
     lowestPrice = {
@@ -508,8 +519,14 @@ export async function enrichAnalysisLinks(
           `${alt.brand} ${alt.name}`
         );
         const listingPrice = validPrice(listing?.price);
-        if (listing) {
-          url = listing.url || url;
+        if (listing?.url && isProductDetailUrl(listing.url)) {
+          url = listing.url;
+          if (listingPrice) {
+            price = listingPrice;
+            priceVerified = true;
+          }
+          imageUrl = listing.imageUrl ?? imageUrl;
+        } else if (listing) {
           if (listingPrice) {
             price = listingPrice;
             priceVerified = true;
@@ -518,7 +535,7 @@ export async function enrichAnalysisLinks(
         }
       }
 
-      if (isGenericSearchUrl(url) && serperKey) {
+      if (serperKey && (isGenericSearchUrl(url) || !isProductDetailUrl(url))) {
         const resolved = await resolveToProductUrl(
           serperKey,
           alt.brand,
@@ -526,9 +543,13 @@ export async function enrichAnalysisLinks(
           `${alt.brand} ${alt.name}`,
           { retailer: alt.brand, price, url, inStock: true, priceVerified }
         );
-        url = resolved.url;
+        if (isProductDetailUrl(resolved.url)) {
+          url = resolved.url;
+        }
         imageUrl = imageUrl ?? resolved.imageUrl;
       }
+
+      url = finalizeAlternativeUrl(url, alt.brand, alt.name);
 
       if (!imageUrl && serperKey) {
         imageUrl =
@@ -540,7 +561,7 @@ export async function enrichAnalysisLinks(
         imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
       }
 
-      return { ...alt, url, price, priceVerified, imageUrl: imageUrl ?? "" };
+      return { ...alt, url, price, priceVerified, imageUrl: imageUrl || undefined };
     })
   );
 

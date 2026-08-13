@@ -66,6 +66,9 @@ export const RETAILER_DOMAINS: Record<string, string> = {
   poshmark: "poshmark.com",
   ebay: "ebay.com",
   therealreal: "therealreal.com",
+  ssense: "ssense.com",
+  farfetch: "farfetch.com",
+  target: "target.com",
   footlocker: "footlocker.com",
   finishline: "finishline.com",
   jdsports: "jdsports.com",
@@ -125,7 +128,7 @@ export function resolveProductUrl(
 ): string {
   const direct = url?.trim();
   if (direct && direct !== "#" && direct.startsWith("http") && !isGoogleUrl(direct)) {
-    return direct;
+    if (isProductDetailUrl(direct)) return direct;
   }
   return buildProductSearchUrl(retailer, brand, name);
 }
@@ -137,7 +140,7 @@ export function resolveAlternativeUrl(
 ): string {
   const direct = url?.trim();
   if (direct && direct !== "#" && direct.startsWith("http") && !isGoogleUrl(direct)) {
-    return direct;
+    if (isProductDetailUrl(direct)) return direct;
   }
   return buildAlternativeUrl(brand, name);
 }
@@ -160,6 +163,27 @@ export function isGoogleUrl(url: string): boolean {
   }
 }
 
+export function finalizeRetailerUrl(
+  url: string | undefined,
+  retailer: string,
+  brand: string,
+  name: string
+): string {
+  const trimmed = url?.trim();
+  if (trimmed && trimmed !== "#" && isProductDetailUrl(trimmed)) return trimmed;
+  return buildProductSearchUrl(retailer, brand, name);
+}
+
+export function finalizeAlternativeUrl(
+  url: string | undefined,
+  brand: string,
+  name: string
+): string {
+  const trimmed = url?.trim();
+  if (trimmed && trimmed !== "#" && isProductDetailUrl(trimmed)) return trimmed;
+  return buildAlternativeUrl(brand, name);
+}
+
 /** True when the URL lands on a specific product page (not search/category). */
 export function isProductDetailUrl(url?: string): boolean {
   if (!url?.trim() || !url.startsWith("http") || isGoogleUrl(url)) return false;
@@ -177,11 +201,28 @@ export function isProductDetailUrl(url?: string): boolean {
     if (host.includes("hibbett") && /\/product\//i.test(path)) return true;
     if (host.includes("dickssportinggoods") && /\/p\//i.test(path)) return true;
     if (host.includes("nordstrom.com") && /\/s\/[^/]+\/\d+/i.test(path)) return true;
-    if (host.includes("stockx.com") && path.split("/").filter(Boolean).length >= 1 && !path.includes("/search")) {
+    if (host.includes("uniqlo.com") && /\/products\/[^/?#]+/i.test(path)) return true;
+    if (host.includes("zara.com") && /\.html$/i.test(path) && !path.includes("/search")) return true;
+    if (host.includes("hm.com") && (/productpage\.|\/product\//i.test(path))) return true;
+    if (host.includes("asos.com") && /\/prd\//i.test(path)) return true;
+    if (host.includes("aritzia.com") && /\/product\//i.test(path)) return true;
+    if (host.includes("lululemon.com") && /\/p\//i.test(path)) return true;
+    if (host.includes("thereformation.com") && /\/products\//i.test(path)) return true;
+    if (host.includes("everlane.com") && /\/products\//i.test(path)) return true;
+    if (host.includes("revolve.com") && /\/dp\//i.test(path)) return true;
+    if (host.includes("target.com") && /\/p\//i.test(path) && !path.includes("/s?")) return true;
+    if (host.includes("ssense.com") && path.split("/").filter(Boolean).length >= 2 && !path.includes("/search")) {
       return true;
+    }
+    if (host.includes("farfetch.com") && /\/shopping\/[^/?#]+\/item-\d+/i.test(path)) return true;
+    if (host.includes("shopbop.com") && /\/vp\//i.test(path)) return true;
+    if (host.includes("stockx.com")) {
+      const slug = path.split("/").filter(Boolean)[0];
+      return Boolean(slug && slug.includes("-") && !slug.includes("search"));
     }
     if (host.includes("adidas.") && /\/[^/]+\/[A-Z0-9]+(?:\.html)?$/i.test(path)) return true;
 
+    if (/\/products\/[^/?#]+/i.test(path) && !path.includes("/search")) return true;
     if (/\/product\/[^/?#]+/i.test(path) && !/\/products\?/i.test(path)) return true;
     if (/\/p\/[^/?#]+/i.test(path)) return true;
     if (/\/dp\/[A-Z0-9]{6,}/i.test(path)) return true;

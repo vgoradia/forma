@@ -18,14 +18,27 @@ function ProductImageInner({
   fit?: "cover" | "contain";
 }) {
   const [failed, setFailed] = useState(false);
+  const [useDirect, setUseDirect] = useState(false);
 
   const trimmed = src?.trim();
-  const displaySrc = trimmed ? getDisplayImageSrc(trimmed) : undefined;
+  const isLocal = Boolean(trimmed?.startsWith("data:") || trimmed?.startsWith("/"));
+  const isRemote = Boolean(trimmed?.startsWith("http://") || trimmed?.startsWith("https://"));
+
+  let displaySrc: string | undefined;
+  if (trimmed && !failed) {
+    if (isLocal) {
+      displaySrc = trimmed;
+    } else if (isRemote) {
+      displaySrc = useDirect ? trimmed : getDisplayImageSrc(trimmed);
+    } else {
+      displaySrc = trimmed;
+    }
+  }
 
   const isScreenshot = trimmed?.startsWith("data:") ?? false;
   const objectFit = isScreenshot ? "contain" : fit;
 
-  if (!displaySrc || failed) {
+  if (!displaySrc) {
     return (
       <div
         className={cn("bg-gradient-to-br", fallbackClassName, className)}
@@ -54,7 +67,13 @@ function ProductImageInner({
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
+        onError={() => {
+          if (isRemote && !useDirect) {
+            setUseDirect(true);
+            return;
+          }
+          setFailed(true);
+        }}
       />
     </div>
   );

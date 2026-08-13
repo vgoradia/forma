@@ -11,7 +11,12 @@ export function ProductLink({
   children: ReactNode;
   className?: string;
 }) {
-  const outbound = applyAffiliateParams(href);
+  const trimmed = href?.trim();
+  if (!trimmed || trimmed === "#") {
+    return <span className={className}>{children}</span>;
+  }
+
+  const outbound = applyAffiliateParams(trimmed);
 
   return (
     <a href={outbound} target="_blank" rel="noopener noreferrer sponsored" className={className}>
