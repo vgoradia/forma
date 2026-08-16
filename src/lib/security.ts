@@ -115,7 +115,7 @@ function looksLikeImage(bytes: ArrayBuffer, mimeType: string): boolean {
     );
   }
 
-  return false;
+  return ALLOWED_IMAGE_MIMES.has(mimeType) && bytes.byteLength >= 64;
 }
 
 export function isBlockedHostname(hostname: string): boolean {

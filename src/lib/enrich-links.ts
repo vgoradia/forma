@@ -23,6 +23,9 @@ import {
 import { RETAILER_DOMAINS } from "./product-links";
 import { resolveProductImageUrl, resolveQueryImageUrl } from "./resolve-image";
 import { coercePrice } from "./utils";
+import { safeAsync, withTimeout } from "./resilience";
+
+const ENRICH_TIMEOUT_MS = 50_000;
 
 function getUserQuery(input?: AnalyzeInput): string | undefined {
   if (!input) return undefined;
@@ -371,7 +374,41 @@ function applyProductImage(
   };
 }
 
-export async function enrichAnalysisLinks(
+function applyBaselineEnrichment(analysis: ProductAnalysis): ProductAnalysis {
+  const product = analysis.identifiedProduct;
+  const brand = product.brand;
+  const name = product.name;
+
+  return {
+    ...analysis,
+    lowestPrice: {
+      ...analysis.lowestPrice,
+      url: finalizeRetailerUrl(
+        analysis.lowestPrice.url,
+        analysis.lowestPrice.retailer,
+        brand,
+        name
+      ),
+    },
+    prices: (analysis.prices ?? []).map((priceRow) => ({
+      ...priceRow,
+      url: finalizeRetailerUrl(priceRow.url, priceRow.retailer, brand, name),
+    })),
+    alternatives: (analysis.alternatives ?? []).map((alt) => ({
+      ...alt,
+      url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
+    })),
+    secondhand: {
+      available: analysis.secondhand?.available ?? false,
+      platforms: (analysis.secondhand?.platforms ?? []).map((platform) => ({
+        ...platform,
+        url: buildSecondhandUrl(platform.name, brand, name),
+      })),
+    },
+  };
+}
+
+async function enrichAnalysisLinksInternal(
   analysis: ProductAnalysis,
   input?: AnalyzeInput
 ): Promise<ProductAnalysis> {
@@ -507,65 +544,77 @@ export async function enrichAnalysisLinks(
   }
 
   const alternatives = await Promise.all(
-    analysis.alternatives.map(async (alt, index) => {
-      const aiPrice = validPrice(alt.price);
-      let url = buildAlternativeUrl(alt.brand, alt.name);
-      let price = aiPrice ?? 0;
-      let priceVerified = false;
-      let imageUrl = normalizeImageUrl(alt.imageUrl);
+    analysis.alternatives.map(async (alt, index) =>
+      safeAsync(
+        async () => {
+          const aiPrice = validPrice(alt.price);
+          let url = buildAlternativeUrl(alt.brand, alt.name);
+          let price = aiPrice ?? 0;
+          let priceVerified = false;
+          let imageUrl = normalizeImageUrl(alt.imageUrl);
 
-      if (serperKey && index < 5) {
-        const listing = await findBestListing(
-          serperKey,
-          { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
-          alt.brand,
-          `${alt.brand} ${alt.name}`
-        );
-        const listingPrice = validPrice(listing?.price);
-        if (listing?.url && isProductDetailUrl(listing.url)) {
-          url = listing.url;
-          if (listingPrice) {
-            price = listingPrice;
-            priceVerified = true;
+          if (serperKey && index < 3) {
+            const listing = await findBestListing(
+              serperKey,
+              { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
+              alt.brand,
+              `${alt.brand} ${alt.name}`
+            );
+            const listingPrice = validPrice(listing?.price);
+            if (listing?.url && isProductDetailUrl(listing.url)) {
+              url = listing.url;
+              if (listingPrice) {
+                price = listingPrice;
+                priceVerified = true;
+              }
+              imageUrl = listing.imageUrl ?? imageUrl;
+            } else if (listing) {
+              if (listingPrice) {
+                price = listingPrice;
+                priceVerified = true;
+              }
+              imageUrl = listing.imageUrl ?? imageUrl;
+            }
           }
-          imageUrl = listing.imageUrl ?? imageUrl;
-        } else if (listing) {
-          if (listingPrice) {
-            price = listingPrice;
-            priceVerified = true;
+
+          if (serperKey && index < 3 && (isGenericSearchUrl(url) || !isProductDetailUrl(url))) {
+            const resolved = await resolveToProductUrl(
+              serperKey,
+              alt.brand,
+              { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
+              `${alt.brand} ${alt.name}`,
+              { retailer: alt.brand, price, url, inStock: true, priceVerified }
+            );
+            if (isProductDetailUrl(resolved.url)) {
+              url = resolved.url;
+            }
+            imageUrl = imageUrl ?? resolved.imageUrl;
           }
-          imageUrl = listing.imageUrl ?? imageUrl;
-        }
-      }
 
-      if (serperKey && (isGenericSearchUrl(url) || !isProductDetailUrl(url))) {
-        const resolved = await resolveToProductUrl(
-          serperKey,
-          alt.brand,
-          { brand: alt.brand, name: alt.name, colors: product.colors, category: product.category },
-          `${alt.brand} ${alt.name}`,
-          { retailer: alt.brand, price, url, inStock: true, priceVerified }
-        );
-        if (isProductDetailUrl(resolved.url)) {
-          url = resolved.url;
-        }
-        imageUrl = imageUrl ?? resolved.imageUrl;
-      }
+          url = finalizeAlternativeUrl(url, alt.brand, alt.name);
 
-      url = finalizeAlternativeUrl(url, alt.brand, alt.name);
+          if (!imageUrl && serperKey && index < 3) {
+            imageUrl =
+              (await findImageForQuery(serperKey, `${alt.brand} ${alt.name}`)) ??
+              (await resolveQueryImageUrl(`${alt.brand} ${alt.name}`));
+          }
 
-      if (!imageUrl && serperKey) {
-        imageUrl =
-          (await findImageForQuery(serperKey, `${alt.brand} ${alt.name}`)) ??
-          (await resolveQueryImageUrl(`${alt.brand} ${alt.name}`));
-      }
+          if (!imageUrl && index < 3) {
+            imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
+          }
 
-      if (!imageUrl) {
-        imageUrl = await resolveQueryImageUrl(`${alt.brand} ${alt.name}`);
-      }
-
-      return { ...alt, url, price, priceVerified, imageUrl: imageUrl || undefined };
-    })
+          return { ...alt, url, price, priceVerified, imageUrl: imageUrl || undefined };
+        },
+        {
+          ...alt,
+          url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
+          price: validPrice(alt.price) ?? 0,
+          priceVerified: false,
+          imageUrl: alt.imageUrl || undefined,
+        },
+        `Alternative enrichment (${alt.brand})`
+      )
+    )
   );
 
   const platforms = analysis.secondhand.platforms.map((platform) => ({
@@ -597,4 +646,20 @@ export async function enrichAnalysisLinks(
   }
 
   return enriched;
+}
+
+export async function enrichAnalysisLinks(
+  analysis: ProductAnalysis,
+  input?: AnalyzeInput
+): Promise<ProductAnalysis> {
+  try {
+    return await withTimeout(
+      enrichAnalysisLinksInternal(analysis, input),
+      ENRICH_TIMEOUT_MS,
+      "Analysis enrichment"
+    );
+  } catch (error) {
+    console.error("Link enrichment failed, returning baseline analysis:", error);
+    return applyBaselineEnrichment(analysis);
+  }
 }

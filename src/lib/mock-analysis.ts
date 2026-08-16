@@ -78,8 +78,28 @@ const DEMO_SCENARIOS: Record<string, Partial<ProductAnalysis>> = {
 
 function pickScenario(query?: string): keyof typeof DEMO_SCENARIOS {
   const q = (query ?? "").toLowerCase();
-  if (q.includes("dress") || q.includes("slip") || q.includes("silk")) return "dress";
-  if (q.includes("sneaker") || q.includes("shoe") || q.includes("trainer")) return "sneakers";
+  if (q.includes("dress") || q.includes("slip") || q.includes("silk") || q.includes("gown")) {
+    return "dress";
+  }
+  if (
+    q.includes("sneaker") ||
+    q.includes("shoe") ||
+    q.includes("trainer") ||
+    q.includes("boot") ||
+    q.includes("sandal")
+  ) {
+    return "sneakers";
+  }
+  if (
+    q.includes("short") ||
+    q.includes("pant") ||
+    q.includes("trouser") ||
+    q.includes("jean") ||
+    q.includes("chino") ||
+    q.includes("skirt")
+  ) {
+    return "blazer";
+  }
   return "blazer";
 }
 

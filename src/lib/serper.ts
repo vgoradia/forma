@@ -1,4 +1,4 @@
-import { RETAILER_DOMAINS, isGenericSearchUrl, isProductDetailUrl, resolveRetailerLink } from "./product-links";
+import { isGenericSearchUrl, isProductDetailUrl, resolveRetailerDomain, resolveRetailerLink } from "./product-links";
 import { coercePrice } from "./utils";
 
 export interface SerperListing {
@@ -86,12 +86,7 @@ export function normalizeImageUrl(url?: string): string | undefined {
 }
 
 function getDomainForLabel(label: string): string | undefined {
-  const key = label.toLowerCase().replace(/[^a-z0-9]/g, "");
-  for (const [retailer, domain] of Object.entries(RETAILER_DOMAINS)) {
-    const rk = retailer.replace(/[^a-z0-9]/g, "");
-    if (key.includes(rk) || rk.includes(key)) return domain;
-  }
-  return undefined;
+  return resolveRetailerDomain(label);
 }
 
 export function buildSearchQuery(

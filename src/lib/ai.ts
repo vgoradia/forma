@@ -145,8 +145,20 @@ function extractJson(text: string): string {
   throw new Error("Incomplete JSON in AI response");
 }
 
+function repairJson(raw: string): string {
+  return raw
+    .replace(/,\s*([}\]])/g, "$1")
+    .replace(/\u201c|\u201d/g, '"')
+    .replace(/\u2018|\u2019/g, "'");
+}
+
 function parseAnalysis(raw: string): Omit<ProductAnalysis, "id" | "analyzedAt" | "lowestPrice"> {
-  return normalizeAnalysis(JSON.parse(extractJson(raw)));
+  const jsonText = extractJson(raw);
+  try {
+    return normalizeAnalysis(JSON.parse(jsonText));
+  } catch {
+    return normalizeAnalysis(JSON.parse(repairJson(jsonText)));
+  }
 }
 
 function buildUserText(input: AnalyzeInput): string {
@@ -156,7 +168,7 @@ function buildUserText(input: AnalyzeInput): string {
   if (input.type === "url") {
     return `Analyze this product link and provide a complete shopping decision analysis: ${input.url}`;
   }
-  return `Analyze this product query and provide a complete shopping decision analysis: ${input.query}`;
+  return `Analyze this product query and provide a complete shopping decision analysis. Use the user's exact search terms to identify the most likely product match: ${input.query}`;
 }
 
 function finalizeAnalysis(
@@ -203,19 +215,32 @@ async function analyzeWithAnthropic(input: AnalyzeInput, apiKey: string): Promis
         ]
       : userText;
 
-  const response = await client.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content }],
-  });
+  let lastError: unknown;
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No response from AI");
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content }],
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      if (!textBlock || textBlock.type !== "text") {
+        throw new Error("No response from AI");
+      }
+
+      return finalizeAnalysis(parseAnalysis(textBlock.text));
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) {
+        console.warn("Anthropic analysis attempt failed, retrying once:", error);
+      }
+    }
   }
 
-  return finalizeAnalysis(parseAnalysis(textBlock.text));
+  throw lastError instanceof Error ? lastError : new Error("Analysis failed");
 }
 
 async function analyzeWithOpenAI(input: AnalyzeInput, apiKey: string): Promise<ProductAnalysis> {
@@ -256,18 +281,24 @@ export async function analyzeProduct(input: AnalyzeInput): Promise<ProductAnalys
 
   let analysis: ProductAnalysis;
 
-  if (!apiKey || apiKey === "sk-your-key-here") {
-    const query =
-      input.type === "text" ? input.query : input.type === "url" ? input.url : undefined;
-    analysis = generateMockAnalysis(query);
-  } else if (isAnthropicKey(apiKey)) {
-    analysis = await analyzeWithAnthropic(input, apiKey);
-  } else {
-    analysis = await analyzeWithOpenAI(input, apiKey);
+  try {
+    if (!apiKey || apiKey === "sk-your-key-here") {
+      const query =
+        input.type === "text" ? input.query : input.type === "url" ? input.url : undefined;
+      analysis = generateMockAnalysis(query);
+    } else if (isAnthropicKey(apiKey)) {
+      analysis = await analyzeWithAnthropic(input, apiKey);
+    } else {
+      analysis = await analyzeWithOpenAI(input, apiKey);
+    }
+  } catch (error) {
+    console.error("Core analysis failed:", error);
+    throw new Error(
+      input.type === "image"
+        ? "We couldn't analyze that image. Try a clearer photo or describe the product instead."
+        : "We couldn't analyze that product right now. Please try again in a moment."
+    );
   }
 
-  return enrichAnalysisLinks(analysis, input).catch((error) => {
-    console.error("Link enrichment failed, returning base analysis:", error);
-    return analysis;
-  });
+  return enrichAnalysisLinks(analysis, input);
 }
