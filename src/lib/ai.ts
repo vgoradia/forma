@@ -266,5 +266,8 @@ export async function analyzeProduct(input: AnalyzeInput): Promise<ProductAnalys
     analysis = await analyzeWithOpenAI(input, apiKey);
   }
 
-  return enrichAnalysisLinks(analysis, input);
+  return enrichAnalysisLinks(analysis, input).catch((error) => {
+    console.error("Link enrichment failed, returning base analysis:", error);
+    return analysis;
+  });
 }

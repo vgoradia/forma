@@ -76,6 +76,8 @@ export const RETAILER_DOMAINS: Record<string, string> = {
   hibbett: "hibbett.com",
   zappos: "zappos.com",
   stockx: "stockx.com",
+  tommyhilfiger: "tommy.com",
+  "tommy hilfiger": "tommy.com",
 };
 
 function matchRetailerKey(label: string): string | undefined {

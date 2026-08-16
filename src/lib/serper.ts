@@ -437,7 +437,7 @@ export async function findProductLinkViaWebSearch(
   userQuery?: string,
   preferredSource?: string
 ): Promise<SerperListing | null> {
-  if (preferredSource) {
+  if (preferredSource && getDomainForLabel(preferredSource)) {
     const brandListing = await findRetailerLinkViaWebSearch(
       apiKey,
       preferredSource,
@@ -475,7 +475,7 @@ export async function findRetailerLinkViaWebSearch(
 ): Promise<SerperListing | null> {
   const domain = getDomainForLabel(retailer);
   if (!domain) {
-    return findProductLinkViaWebSearch(apiKey, product, userQuery, retailer);
+    return null;
   }
 
   const baseQuery = listingTitle?.trim() || buildSearchQuery(product, userQuery);
