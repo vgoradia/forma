@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-
-function isAllowedImageUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
+import { checkRateLimit, getClientIp, MAX_IMAGE_LOOKUP_REQUESTS } from "@/lib/rate-limit";
+import { isAllowedProxyImageUrl } from "@/lib/security";
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const limit = checkRateLimit(`image-proxy:${ip}`, MAX_IMAGE_LOOKUP_REQUESTS);
+
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: `Too many requests. Try again in ${limit.retryAfter}s.` },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    );
+  }
+
   const raw = request.nextUrl.searchParams.get("url");
-  if (!raw || !isAllowedImageUrl(raw)) {
+  if (!raw || !isAllowedProxyImageUrl(raw)) {
     return NextResponse.json({ error: "Invalid image URL" }, { status: 400 });
   }
 
@@ -44,6 +47,9 @@ export async function GET(request: NextRequest) {
     }
 
     const buffer = await upstream.arrayBuffer();
+    if (buffer.byteLength > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image too large" }, { status: 413 });
+    }
 
     return new NextResponse(buffer, {
       headers: {

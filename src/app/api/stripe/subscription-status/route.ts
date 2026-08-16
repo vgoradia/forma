@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { isStripeConfigured } from "@/lib/stripe/config";
 import { findActivePlusSubscription, getStripe } from "@/lib/stripe/server";
+import { setUserPlan } from "@/lib/supabase/admin";
 
 export async function GET() {
   if (!isSupabaseConfigured()) {
@@ -18,11 +19,6 @@ export async function GET() {
     return NextResponse.json({ plan: "free", configured: isStripeConfigured() });
   }
 
-  const metadataPlan = user.user_metadata?.plan;
-  if (metadataPlan === "plus") {
-    return NextResponse.json({ plan: "plus", configured: isStripeConfigured() });
-  }
-
   if (!isStripeConfigured() || !user.email) {
     return NextResponse.json({ plan: "free", configured: isStripeConfigured() });
   }
@@ -31,6 +27,12 @@ export async function GET() {
     const stripe = getStripe();
     const subscription = await findActivePlusSubscription(stripe, user.email);
     const plan = subscription ? "plus" : "free";
+
+    const metadataPlan = user.user_metadata?.plan;
+    if (metadataPlan !== plan) {
+      void setUserPlan(user.id, plan);
+    }
+
     return NextResponse.json({ plan, configured: true });
   } catch {
     return NextResponse.json({ plan: "free", configured: isStripeConfigured() });

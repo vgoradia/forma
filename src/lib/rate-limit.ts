@@ -1,10 +1,22 @@
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = 12;
+const MAX_ANALYZE_REQUESTS = 12;
+const MAX_IMAGE_LOOKUP_REQUESTS = 30;
 
 const hits = new Map<string, { count: number; resetAt: number }>();
 
-export function checkRateLimit(key: string): { ok: true } | { ok: false; retryAfter: number } {
+function pruneExpired(now: number) {
+  if (hits.size < 500) return;
+  for (const [key, entry] of hits) {
+    if (now > entry.resetAt) hits.delete(key);
+  }
+}
+
+export function checkRateLimit(
+  key: string,
+  maxRequests = MAX_ANALYZE_REQUESTS
+): { ok: true } | { ok: false; retryAfter: number } {
   const now = Date.now();
+  pruneExpired(now);
   const entry = hits.get(key);
 
   if (!entry || now > entry.resetAt) {
@@ -12,7 +24,7 @@ export function checkRateLimit(key: string): { ok: true } | { ok: false; retryAf
     return { ok: true };
   }
 
-  if (entry.count >= MAX_REQUESTS) {
+  if (entry.count >= maxRequests) {
     return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
   }
 
@@ -25,3 +37,5 @@ export function getClientIp(request: Request): string {
   if (forwarded) return forwarded.split(",")[0]?.trim() ?? "unknown";
   return request.headers.get("x-real-ip") ?? "unknown";
 }
+
+export { MAX_ANALYZE_REQUESTS, MAX_IMAGE_LOOKUP_REQUESTS };

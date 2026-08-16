@@ -31,7 +31,9 @@ Online shoppers discover products on TikTok and Pinterest but waste 30–60 minu
 
 ## Impact metrics to track (update weekly)
 
-Fill these in from **Vercel Analytics** → Events:
+Fill these in from **Vercel Analytics** → Events. Screenshot each for your college app folder.
+
+### Week 1 baseline — Aug 15, 2026
 
 | Metric | Week 1 goal | Your number |
 |--------|-------------|-------------|
@@ -40,7 +42,9 @@ Fill these in from **Vercel Analytics** → Events:
 | Shares (`share_analysis`) | 25+ | ___ |
 | Referral traffic (`utm_source=share`) | 50+ | ___ |
 
-Even modest numbers are fine if you can speak to **growth tactics** (Reddit, TikTok demo, Product Hunt, friend shares).
+**Where to find:** Vercel dashboard → Forma project → Analytics → filter by event name.
+
+Even modest numbers are fine if you can speak to **growth tactics** (Reddit, TikTok demo, LinkedIn, Product Hunt — no personal network blast).
 
 ---
 
