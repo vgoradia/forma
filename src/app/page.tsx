@@ -118,7 +118,7 @@ export default function LandingPage() {
               Try now
             </Link>
             <Link
-              href="/login?next=/onboarding"
+              href="/scan"
               className="rounded-xl bg-forma-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-forma-primary-dark"
             >
               Get started free

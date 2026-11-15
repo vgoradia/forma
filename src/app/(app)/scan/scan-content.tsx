@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { UploadZone } from "@/components/upload-zone";
 import type { ProductAnalysis } from "@/lib/types";
-import { saveScan } from "@/lib/storage";
+import { completeOnboarding, saveScan } from "@/lib/storage";
+import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
 import { FormaPlusBanner } from "@/components/forma-plus-cta";
 import { trackEvent } from "@/lib/analytics";
@@ -27,6 +28,10 @@ export function ScanContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    completeOnboarding();
+  }, []);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -73,9 +78,11 @@ export function ScanContent() {
           }
         : data;
 
+      const analysis = sanitizeProductAnalysis(analysisWithPreview);
+
       saveScan({
         id: data.id,
-        analysis: analysisWithPreview,
+        analysis,
         source,
         label:
           source === "upload"
@@ -105,7 +112,7 @@ export function ScanContent() {
   return (
     <PageContainer narrow>
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/home" className="rounded-xl p-2 text-forma-muted hover:bg-white">
+        <Link href="/" className="rounded-xl p-2 text-forma-muted hover:bg-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>

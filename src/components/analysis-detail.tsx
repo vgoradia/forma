@@ -112,7 +112,7 @@ export function AnalysisDetail({
         </div>
       )}
       <div className="mb-4 flex items-center justify-between lg:mb-6">
-        <Link href="/home" className="rounded-xl p-2 text-forma-muted hover:bg-white">
+        <Link href={scanId ? "/home" : "/"} className="rounded-xl p-2 text-forma-muted hover:bg-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <LogoMark size="sm" className="lg:hidden" />
