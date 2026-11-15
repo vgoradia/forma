@@ -22,6 +22,7 @@ export default function AlertsPage() {
   const saleAlerts = prefs.salePredictions ? getPriceDropAlerts(scans) : [];
   const savedItems = getSavedItems(scans, bookmarkIds);
   const demoFallback = getDemoPriceDrops();
+  const usingDemoAlerts = saleAlerts.length === 0;
   const displayAlerts = saleAlerts.length > 0 ? saleAlerts : demoFallback;
   const alertCount = saleAlerts.length + (prefs.savedItemReminders ? savedItems.length : 0);
 
@@ -80,6 +81,11 @@ export default function AlertsPage() {
         </>
       )}
 
+      {usingDemoAlerts && scans.length === 0 && (
+        <p className="mb-3 text-center text-xs text-forma-muted">
+          Sample alerts — scan a product to get personalized predictions.
+        </p>
+      )}
       <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Price drops to watch</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {displayAlerts.map((item) => (

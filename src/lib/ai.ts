@@ -91,7 +91,11 @@ function normalizeAnalysis(
     prices,
     alternatives,
     reviewSummary: {
-      ...raw.reviewSummary,
+      overallRating: raw.reviewSummary?.overallRating ?? 4,
+      totalReviews: raw.reviewSummary?.totalReviews ?? 0,
+      summary: raw.reviewSummary?.summary ?? "",
+      qualityScore: raw.reviewSummary?.qualityScore ?? 80,
+      valueScore: raw.reviewSummary?.valueScore ?? 75,
       pros: toStringArray(raw.reviewSummary?.pros),
       cons: toStringArray(raw.reviewSummary?.cons),
     },

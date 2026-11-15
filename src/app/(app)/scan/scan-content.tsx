@@ -133,7 +133,18 @@ export function ScanContent() {
         initialQuery={initialQuery}
       />
 
-      {error && <p className="mt-4 text-center text-sm text-red-500">{error}</p>}
+      {error && (
+        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="mt-2 text-xs font-semibold text-red-800 underline"
+          >
+            Dismiss and try again
+          </button>
+        </div>
+      )}
     </PageContainer>
   );
 }

@@ -15,6 +15,7 @@ export default function WardrobePage() {
   const scans = useScans();
   const wardrobeItems = getWardrobeMatchesFromScans(scans);
   const displayItems = wardrobeItems.length > 0 ? wardrobeItems : getDemoWardrobeMatches();
+  const usingDemo = wardrobeItems.length === 0;
   const itemCount = countWardrobeItems(scans);
 
   return (
@@ -56,6 +57,11 @@ export default function WardrobePage() {
         </Link>
       </div>
 
+      {usingDemo && (
+        <p className="mb-3 text-center text-xs text-forma-muted">
+          Sample matches — scan items to build your wardrobe insights.
+        </p>
+      )}
       <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Recent matches</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {displayItems.map((item) => (

@@ -149,6 +149,7 @@ export function UploadZone({
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -166,8 +167,17 @@ export function UploadZone({
           <label className="mb-2 block text-sm font-medium text-stone-700">Product URL</label>
           <input
             type="url"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
             value={link}
             onChange={(e) => setLink(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && canSubmit && !busy) {
+                e.preventDefault();
+                void handleSubmit();
+              }
+            }}
             placeholder="https://www.nordstrom.com/s/..."
             className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
           />
@@ -183,6 +193,12 @@ export function UploadZone({
           <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSubmit && !busy) {
+                e.preventDefault();
+                void handleSubmit();
+              }
+            }}
             placeholder="Oversized camel blazer from TikTok, double-breasted with relaxed fit..."
             rows={4}
             className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"

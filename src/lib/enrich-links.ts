@@ -1,4 +1,5 @@
 import type { AnalyzeInput, ProductAnalysis, RetailerPrice } from "./types";
+import { stripDuplicateBrand } from "./utils";
 import {
   buildAlternativeUrl,
   buildProductSearchUrl,
@@ -377,7 +378,7 @@ function applyProductImage(
 function applyBaselineEnrichment(analysis: ProductAnalysis): ProductAnalysis {
   const product = analysis.identifiedProduct;
   const brand = product.brand;
-  const name = product.name;
+  const name = stripDuplicateBrand(brand, product.name);
 
   return {
     ...analysis,
@@ -653,11 +654,12 @@ export async function enrichAnalysisLinks(
   input?: AnalyzeInput
 ): Promise<ProductAnalysis> {
   try {
-    return await withTimeout(
+    const enriched = await withTimeout(
       enrichAnalysisLinksInternal(analysis, input),
       ENRICH_TIMEOUT_MS,
       "Analysis enrichment"
     );
+    return applyBaselineEnrichment(enriched);
   } catch (error) {
     console.error("Link enrichment failed, returning baseline analysis:", error);
     return applyBaselineEnrichment(analysis);

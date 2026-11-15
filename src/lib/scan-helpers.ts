@@ -178,7 +178,7 @@ export function getDemoPriceDrops() {
     subtitle: item.note,
     price: item.price,
     imageUrl: item.imageUrl,
-    href: "/alerts",
+    href: "/analysis/demo",
   }));
 }
 
@@ -199,7 +199,7 @@ export function getDemoWardrobeMatches() {
     matches: item.matches,
     subtitle: `Matches ${item.matches} items in your wardrobe`,
     imageUrl: item.imageUrl,
-    href: "/wardrobe",
+    href: "/analysis/demo",
   }));
 }
 

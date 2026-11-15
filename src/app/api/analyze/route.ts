@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeProduct } from "@/lib/ai";
+import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import {
   sanitizeApiError,
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const analysis = await analyzeProduct(parsed.input);
-    return NextResponse.json(analysis);
+    return NextResponse.json(sanitizeProductAnalysis(analysis));
   } catch (error) {
     console.error("Analysis error:", error);
     return NextResponse.json(
