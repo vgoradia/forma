@@ -144,7 +144,20 @@ export default function ProfilePage() {
         <p className="mt-4 rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">{status}</p>
       )}
 
-      <FormaPlusBanner variant="hero" className="mt-6" />
+      {scans.length > 0 && <FormaPlusBanner variant="hero" className="mt-6" />}
+
+      {!profile.isAuthenticated && scans.length === 0 && (
+        <div className="mt-6 rounded-2xl border border-dashed border-forma-border bg-white p-5 text-center">
+          <p className="text-sm font-medium text-gray-900">Try Forma first</p>
+          <p className="mt-1 text-xs text-forma-muted">No account needed — run a scan from your phone or laptop.</p>
+          <Link
+            href="/scan"
+            className="mt-4 inline-flex rounded-xl bg-forma-primary px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Start scanning
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6 rounded-2xl border border-forma-border bg-white p-4">
         <div className="flex items-center gap-4">

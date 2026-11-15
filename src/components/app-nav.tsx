@@ -9,6 +9,7 @@ import { UserAvatar } from "@/components/auth-ui";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { FormaPlusNavPromo } from "@/components/forma-plus-cta";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
+import { useScans } from "@/lib/storage";
 
 const tabs = [
   { href: "/home", label: "Home", icon: Home },
@@ -72,11 +73,13 @@ export function AppNav() {
   const pathname = usePathname();
   const profile = useUserProfile();
   const { plan } = useSubscriptionPlan();
+  const scans = useScans();
+  const showPlusPromo = scans.length > 0 || profile.isAuthenticated;
 
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-forma-border bg-white lg:flex">
-        <Link href="/home" className="border-b border-forma-border px-6 py-5">
+        <Link href="/" className="border-b border-forma-border px-6 py-5" title="Forma home">
           <LogoWordmark size="md" showTagline />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 p-4">
@@ -90,7 +93,7 @@ export function AppNav() {
           ))}
         </nav>
         <div className="border-t border-forma-border p-4">
-          <FormaPlusNavPromo />
+          {showPlusPromo && <FormaPlusNavPromo />}
           <Link
             href="/profile"
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-gray-50"

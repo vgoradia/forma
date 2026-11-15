@@ -7,6 +7,7 @@ import { AnalysisDetail } from "@/components/analysis-detail";
 import { getScan, saveScan } from "@/lib/storage";
 import type { ProductAnalysis } from "@/lib/types";
 import { generateMockAnalysis } from "@/lib/mock-analysis";
+import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
 import { getAnalysisHeroImage, fetchProductImageUrl } from "@/lib/product-images";
 import { trackEvent } from "@/lib/analytics";
@@ -16,7 +17,7 @@ function loadScan(id: string): {
   imagePreview?: string;
 } {
   if (id === "demo") {
-    return { analysis: generateMockAnalysis("dress") };
+    return { analysis: sanitizeProductAnalysis(generateMockAnalysis("dress")) };
   }
   if (typeof window === "undefined") {
     return { analysis: null };
@@ -110,10 +111,16 @@ function AnalysisContent({ id }: { id: string }) {
     return (
       <PageContainer>
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-          <p className="text-sm text-forma-muted">Analysis not found</p>
-          <Link href="/scan" className="mt-4 text-sm font-semibold text-forma-primary">
-            Start a new scan
-          </Link>
+          <p className="text-sm text-forma-muted">This analysis isn&apos;t saved on this device.</p>
+          <p className="mt-1 text-xs text-forma-muted">Links only work in the browser where you ran the scan.</p>
+          <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4">
+            <Link href="/scan" className="text-sm font-semibold text-forma-primary">
+              Start a new scan
+            </Link>
+            <Link href="/analysis/demo" className="text-sm font-semibold text-forma-muted">
+              View demo
+            </Link>
+          </div>
         </div>
       </PageContainer>
     );

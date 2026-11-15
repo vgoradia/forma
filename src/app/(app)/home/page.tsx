@@ -21,7 +21,7 @@ import {
   getRecommendedFromScans,
   getWardrobeMatchesFromScans,
 } from "@/lib/scan-helpers";
-import { getPrefs, isOnboardingComplete, saveScan, useLastScan, useScans } from "@/lib/storage";
+import { getPrefs, saveScan, useLastScan, useScans } from "@/lib/storage";
 import { formatPrice, formatProductTitle } from "@/lib/utils";
 import { HorizontalSection } from "@/components/home/horizontal-section";
 import { ProductCard } from "@/components/home/product-card";
@@ -46,12 +46,6 @@ export default function AppHomePage() {
   const scans = useScans();
   const prefs = useMemo(() => getPrefs(), []);
   const profile = useUserProfile();
-
-  useEffect(() => {
-    if (!isOnboardingComplete()) {
-      router.replace("/onboarding");
-    }
-  }, [router]);
 
   useEffect(() => {
     if (!lastScan) return;
@@ -165,7 +159,9 @@ export default function AppHomePage() {
         </div>
       </div>
 
-      <FormaPlusBanner variant="hero" className="mb-8" headline="Scan unlimited products with Forma Plus" />
+      {scans.length > 0 && (
+        <FormaPlusBanner variant="hero" className="mb-8" headline="Scan unlimited products with Forma Plus" />
+      )}
 
       {lastScan && product && lowest ? (
         <Link
@@ -221,6 +217,12 @@ export default function AppHomePage() {
             <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
+      )}
+
+      {scans.length === 0 && (
+        <p className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50/90 px-4 py-3 text-center text-xs text-indigo-900 lg:text-sm">
+          Sample picks below — scan a product to personalize your feed.
+        </p>
       )}
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-2">

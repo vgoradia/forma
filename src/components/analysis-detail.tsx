@@ -400,8 +400,12 @@ export function AnalysisDetail({
         <p className="mt-2 text-xs leading-relaxed text-forma-muted lg:text-sm">{analysis.verdict.reasoning}</p>
       </Card>
 
-      <FormaPlusAnalysisUpsell />
-      <FormaPlusMobileSticky />
+      {scanId && (
+        <>
+          <FormaPlusAnalysisUpsell />
+          <FormaPlusMobileSticky />
+        </>
+      )}
     </PageContainer>
   );
 }

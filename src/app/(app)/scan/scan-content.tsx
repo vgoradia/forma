@@ -9,7 +9,6 @@ import type { ProductAnalysis } from "@/lib/types";
 import { completeOnboarding, saveScan } from "@/lib/storage";
 import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
-import { FormaPlusBanner } from "@/components/forma-plus-cta";
 import { trackEvent } from "@/lib/analytics";
 
 const LOADING_STEPS = [
@@ -121,7 +120,9 @@ export function ScanContent() {
         </div>
       </div>
 
-      <FormaPlusBanner variant="compact" className="mb-6" headline="Plus members scan unlimited" />
+      <p className="mb-4 text-center text-xs text-forma-muted sm:text-sm">
+        Free to use · No signup required · Results in about 10–20 seconds
+      </p>
 
       <UploadZone
         onAnalyze={handleAnalyze}
