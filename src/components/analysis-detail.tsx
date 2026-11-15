@@ -15,7 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import type { ProductAnalysis } from "@/lib/types";
-import { cn, formatPrice, toArray } from "@/lib/utils";
+import { cn, formatPrice, formatProductTitle, toArray } from "@/lib/utils";
 import { ProductLink } from "@/components/product-link";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
@@ -57,6 +57,7 @@ export function AnalysisDetail({
   scanId?: string;
 }) {
   const product = analysis.identifiedProduct;
+  const productTitle = formatProductTitle(product.brand, product.name);
   const colors = toArray(product.colors);
   const match = Math.round(product.confidence * 100);
   const heroImage = getAnalysisHeroImage(analysis, imagePreview);
@@ -71,7 +72,7 @@ export function AnalysisDetail({
   const handleShare = async () => {
     const path = scanId ? `/analysis/${scanId}` : "/analysis/demo";
     const url = buildShareUrl(path);
-    const title = `${product.brand} ${product.name} — Forma analysis`;
+    const title = `${productTitle} — Forma analysis`;
     const text = `${analysis.verdict.headline} Lowest price: ${formatPrice(analysis.lowestPrice.price)} at ${analysis.lowestPrice.retailer}.`;
 
     try {
@@ -102,7 +103,7 @@ export function AnalysisDetail({
         <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50/80 px-4 py-3 text-center lg:mb-6">
           <p className="text-sm font-medium text-gray-900">Demo analysis — see what Forma finds in seconds</p>
           <Link
-            href="/login?next=/scan"
+            href="/scan"
             className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-forma-primary hover:underline"
           >
             Scan your own product
@@ -129,7 +130,7 @@ export function AnalysisDetail({
       <Card className="mb-4 overflow-hidden p-0 lg:mb-6 lg:grid lg:grid-cols-5">
         <ProductImage
           src={heroImage}
-          alt={`${product.brand} ${product.name}`}
+          alt={productTitle}
           fit="contain"
           className="h-44 w-full lg:col-span-2 lg:h-auto lg:min-h-[280px]"
         />
@@ -142,7 +143,7 @@ export function AnalysisDetail({
             </span>
           </div>
           <h1 className="text-lg font-bold text-gray-900 lg:text-2xl">
-            {product.brand} {product.name}
+            {productTitle}
           </h1>
           <p className="mt-1 text-sm text-forma-muted">
             {colors[0] ?? "—"} • {product.category}
@@ -259,21 +260,23 @@ export function AnalysisDetail({
       <section className="mb-4 lg:mb-6">
         <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Better alternatives</h2>
         <div className="flex gap-3 overflow-x-auto hide-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible xl:grid-cols-4">
-          {analysis.alternatives.map((alt) => (
+          {analysis.alternatives.map((alt) => {
+            const altTitle = formatProductTitle(alt.brand, alt.name);
+            return (
             <div
               key={alt.name + alt.brand}
               className="w-40 shrink-0 rounded-2xl border border-forma-border bg-white p-3 lg:w-full lg:shrink"
             >
               <ProductImage
                 src={alt.imageUrl}
-                alt={`${alt.brand} ${alt.name}`}
+                alt={altTitle}
                 className="mb-2 h-20 w-full rounded-xl lg:h-28"
               />
               <span className={cn("mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium", tierStyles[alt.tier])}>
                 {getAlternativeTierLabel(alt.tier)}
               </span>
               <p className="line-clamp-2 text-xs font-semibold text-gray-900 lg:text-sm">
-                {alt.brand} {alt.name}
+                {altTitle}
               </p>
               <p className="mt-1 text-sm font-bold text-gray-900">{formatPrice(alt.price)}</p>
               <p className="mt-1 line-clamp-2 text-[10px] text-forma-muted lg:text-xs">{alt.reason}</p>
@@ -284,7 +287,8 @@ export function AnalysisDetail({
                 View <ExternalLink className="h-3 w-3" />
               </ProductLink>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -360,9 +364,9 @@ export function AnalysisDetail({
               </div>
             ))}
           </div>
-          {analysis.salePrediction.likelihood !== "low" && (
+          {analysis.salePrediction?.likelihood !== "low" && (
             <p className="mt-3 text-[10px] font-medium text-amber-600 lg:text-xs">
-              Expected sale in {analysis.salePrediction.predictedDrop}
+              Expected sale in {analysis.salePrediction?.predictedDrop ?? "the next few weeks"}
             </p>
           )}
         </Card>

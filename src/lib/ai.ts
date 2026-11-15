@@ -4,7 +4,7 @@ import type { AnalyzeInput, ProductAnalysis } from "./types";
 import { generateMockAnalysis } from "./mock-analysis";
 import { enrichAnalysisLinks } from "./enrich-links";
 import { resolveProductUrl, resolveAlternativeUrl, resolveSecondhandUrl } from "./product-links";
-import { coercePrice } from "./utils";
+import { coercePrice, stripDuplicateBrand } from "./utils";
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -24,6 +24,7 @@ Analyze the input and return ONLY valid JSON (no markdown) matching this schema:
   "secondhand": { "available", "platforms": [{ "name", "price", "url" }] }
 }
 Keep text concise. colors, materials, and style must be JSON arrays of strings. Include 3 alternatives and 3-4 prices.
+Put the brand in "brand" only — "name" must NOT repeat the brand (e.g. brand: "Nike", name: "Air Force 1 Low", not "Nike Air Force 1 Low").
 Be precise about product color in both "name" and "colors" (e.g. "Black Supima Cotton T-Shirt", colors: ["Black"]). Prices are approximate — live retailer prices replace them after analysis.
 For prices and alternatives, set "url" to an empty string — real product links are added automatically after analysis.
 Respond with a single JSON object only. No markdown, no code fences, no text before or after the JSON.`;
@@ -47,7 +48,7 @@ function normalizeAnalysis(
 ): Omit<ProductAnalysis, "id" | "analyzedAt" | "lowestPrice"> {
   const confidence = raw.identifiedProduct?.confidence ?? 0.8;
   const brand = raw.identifiedProduct?.brand ?? "";
-  const name = raw.identifiedProduct?.name ?? "";
+  const name = stripDuplicateBrand(brand, raw.identifiedProduct?.name ?? "");
 
   const prices = (Array.isArray(raw.prices) ? raw.prices : []).map((p) => ({
     ...p,
@@ -55,11 +56,17 @@ function normalizeAnalysis(
     url: resolveProductUrl(p.url, p.retailer, brand, name),
   }));
 
-  const alternatives = (Array.isArray(raw.alternatives) ? raw.alternatives : []).map((alt) => ({
-    ...alt,
-    price: coercePrice(alt.price) ?? 0,
-    url: resolveAlternativeUrl(alt.url, alt.brand, alt.name),
-  }));
+  const alternatives = (Array.isArray(raw.alternatives) ? raw.alternatives : []).map((alt) => {
+    const altBrand = alt.brand ?? "";
+    const altName = stripDuplicateBrand(altBrand, alt.name ?? "");
+    return {
+      ...alt,
+      brand: altBrand,
+      name: altName,
+      price: coercePrice(alt.price) ?? 0,
+      url: resolveAlternativeUrl(alt.url, altBrand, altName),
+    };
+  });
 
   const platforms = (Array.isArray(raw.secondhand?.platforms) ? raw.secondhand.platforms : []).map(
     (platform) => ({
@@ -73,6 +80,8 @@ function normalizeAnalysis(
     ...raw,
     identifiedProduct: {
       ...raw.identifiedProduct,
+      brand,
+      name,
       estimatedRetailPrice: coercePrice(raw.identifiedProduct?.estimatedRetailPrice) ?? 0,
       colors: toStringArray(raw.identifiedProduct?.colors),
       materials: toStringArray(raw.identifiedProduct?.materials),
@@ -96,7 +105,12 @@ function normalizeAnalysis(
           ...raw.salePrediction,
           estimatedSalePrice: coercePrice(raw.salePrediction.estimatedSalePrice) ?? 0,
         }
-      : raw.salePrediction,
+      : {
+          likelihood: "low" as const,
+          predictedDrop: "Unknown",
+          estimatedSalePrice: 0,
+          reasoning: "",
+        },
     stylingTips: toStringArray(raw.stylingTips),
     wardrobeMatches: Array.isArray(raw.wardrobeMatches) ? raw.wardrobeMatches : [],
     secondhand: {

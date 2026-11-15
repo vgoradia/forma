@@ -124,6 +124,7 @@ export function UploadZone({
         >
           {preview ? (
             <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={preview} alt="Upload preview" className="max-h-[260px] rounded-2xl object-contain" />
               <button
                 onClick={clearPreview}

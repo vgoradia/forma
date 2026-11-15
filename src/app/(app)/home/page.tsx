@@ -22,7 +22,7 @@ import {
   getWardrobeMatchesFromScans,
 } from "@/lib/scan-helpers";
 import { getPrefs, isOnboardingComplete, saveScan, useLastScan, useScans } from "@/lib/storage";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatProductTitle } from "@/lib/utils";
 import { HorizontalSection } from "@/components/home/horizontal-section";
 import { ProductCard } from "@/components/home/product-card";
 import { PageContainer } from "@/components/page-container";
@@ -178,13 +178,13 @@ export default function AppHomePage() {
           <div className="flex gap-4 lg:gap-6">
             <ProductImage
               src={getAnalysisHeroImage(lastScan.analysis, lastScan.imagePreview)}
-              alt={`${product.brand} ${product.name}`}
+              alt={formatProductTitle(product.brand, product.name)}
               fit="contain"
               className="h-24 w-20 shrink-0 rounded-2xl lg:h-36 lg:w-32"
             />
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-gray-900 lg:text-lg">
-                {product.brand} {product.name}
+                {formatProductTitle(product.brand, product.name)}
               </p>
               <p className="mt-1 text-sm text-forma-muted">
                 {product.colors?.[0] ?? "—"} • {Math.round((product.confidence ?? 0) * 100)}% match

@@ -11,6 +11,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { withTimeout } from "@/lib/resilience";
 
 type AuthContextValue = {
   user: User | null;
@@ -33,12 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     let mounted = true;
 
-    void supabase.auth.getUser().then(({ data }) => {
-      if (mounted) {
-        setUser(data.user);
-        setLoading(false);
-      }
-    });
+    void withTimeout(supabase.auth.getSession(), 4000, "Supabase auth")
+      .then(({ data }) => {
+        if (mounted) {
+          setUser(data.session?.user ?? null);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setLoading(false);
+      });
 
     const {
       data: { subscription },

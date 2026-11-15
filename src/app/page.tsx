@@ -112,7 +112,7 @@ export default function LandingPage() {
               Sign in
             </Link>
             <Link
-              href="/login?next=/scan"
+              href="/scan"
               className="hidden text-sm font-medium text-forma-muted hover:text-gray-900 md:inline"
             >
               Try now
@@ -150,7 +150,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <Link
-                    href="/login?next=/scan"
+                    href="/scan"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-forma-primary px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-forma-primary-dark"
                   >
                     Try free — scan now
@@ -277,7 +277,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/login?next=/scan"
+                href="/scan"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-base font-semibold text-forma-primary transition hover:shadow-lg"
               >
                 Start scanning free

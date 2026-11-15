@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { withTimeout } from "@/lib/resilience";
 import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from "./config";
 
 export async function updateSession(request: NextRequest) {
@@ -26,7 +27,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    // getSession reads cookies locally; getUser calls Supabase and can hang when auth is slow.
+    await withTimeout(supabase.auth.getSession(), 4000, "Supabase session");
+  } catch {
+    // Don't block page loads if Supabase is slow or unreachable.
+  }
 
   return supabaseResponse;
 }

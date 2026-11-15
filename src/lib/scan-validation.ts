@@ -4,6 +4,7 @@ import {
   finalizeRetailerUrl,
   resolveSecondhandUrl,
 } from "./product-links";
+import { stripDuplicateBrand } from "./utils";
 
 function hasObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -49,9 +50,8 @@ export function isValidStoredScan(value: unknown): value is {
 }
 
 export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnalysis {
-  const product = analysis.identifiedProduct;
-  const brand = product.brand;
-  const name = product.name;
+  const brand = analysis.identifiedProduct.brand;
+  const name = stripDuplicateBrand(brand, analysis.identifiedProduct.name);
 
   const lowestPrice = analysis.lowestPrice
     ? {
@@ -63,11 +63,13 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
   return {
     ...analysis,
     identifiedProduct: {
-      ...product,
-      colors: Array.isArray(product.colors) ? product.colors : [],
-      materials: Array.isArray(product.materials) ? product.materials : [],
-      style: Array.isArray(product.style) ? product.style : [],
-      confidence: typeof product.confidence === "number" ? product.confidence : 0,
+      ...analysis.identifiedProduct,
+      brand,
+      name,
+      colors: Array.isArray(analysis.identifiedProduct.colors) ? analysis.identifiedProduct.colors : [],
+      materials: Array.isArray(analysis.identifiedProduct.materials) ? analysis.identifiedProduct.materials : [],
+      style: Array.isArray(analysis.identifiedProduct.style) ? analysis.identifiedProduct.style : [],
+      confidence: typeof analysis.identifiedProduct.confidence === "number" ? analysis.identifiedProduct.confidence : 0,
     },
     lowestPrice,
     prices: Array.isArray(analysis.prices)
@@ -77,11 +79,17 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
         }))
       : [],
     alternatives: Array.isArray(analysis.alternatives)
-      ? analysis.alternatives.map((alt) => ({
-          ...alt,
-          url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
-          imageUrl: alt.imageUrl?.trim() || undefined,
-        }))
+      ? analysis.alternatives.map((alt) => {
+          const altBrand = alt.brand;
+          const altName = stripDuplicateBrand(altBrand, alt.name);
+          return {
+            ...alt,
+            brand: altBrand,
+            name: altName,
+            url: finalizeAlternativeUrl(alt.url, altBrand, altName),
+            imageUrl: alt.imageUrl?.trim() || undefined,
+          };
+        })
       : [],
     secondhand: analysis.secondhand
       ? {

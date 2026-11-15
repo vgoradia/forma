@@ -56,3 +56,27 @@ export function toArray<T>(value: T | T[] | null | undefined): T[] {
   if (value == null) return [];
   return Array.isArray(value) ? value : [value];
 }
+
+/** Remove a leading brand prefix when the model repeats it in `name`. */
+export function stripDuplicateBrand(brand: string, name: string): string {
+  const b = brand.trim();
+  const n = name.trim();
+  if (!b || !n) return n;
+
+  const bLower = b.toLowerCase();
+  const nLower = n.toLowerCase();
+
+  if (nLower === bLower) return "";
+  if (nLower.startsWith(`${bLower} `)) {
+    return n.slice(b.length).trimStart();
+  }
+  return n;
+}
+
+export function formatProductTitle(brand: string, name: string): string {
+  const b = brand.trim();
+  const n = stripDuplicateBrand(b, name);
+  if (!b) return n;
+  if (!n) return b;
+  return `${b} ${n}`;
+}

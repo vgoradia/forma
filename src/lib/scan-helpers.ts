@@ -2,6 +2,7 @@ import type { StoredScan } from "./storage";
 import type { ProductAnalysis } from "./types";
 import { getAnalysisHeroImage } from "./product-images";
 import { homeSections } from "./demo-data";
+import { formatProductTitle } from "./utils";
 
 export function formatRelativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -53,7 +54,7 @@ export function getSourceIcon(scan: StoredScan): string {
 export function getProductName(scan: StoredScan): string {
   const p = scan.analysis?.identifiedProduct;
   if (!p?.brand || !p?.name) return scan.label || "Saved scan";
-  return `${p.brand} ${p.name}`;
+  return formatProductTitle(p.brand, p.name);
 }
 
 export function getScanImage(scan: StoredScan): string | undefined {
@@ -97,7 +98,7 @@ export function getRecommendedFromScans(scans: StoredScan[]) {
     for (const alt of scan.analysis.alternatives.slice(0, 2)) {
       items.push({
         id: `${scan.id}-${alt.brand}-${alt.name}`,
-        name: `${alt.brand} ${alt.name}`,
+        name: formatProductTitle(alt.brand, alt.name),
         subtitle: alt.reason,
         imageUrl: alt.imageUrl,
         href: alt.url,
