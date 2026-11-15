@@ -197,7 +197,7 @@ export function getDemoWardrobeMatches() {
     id: item.id,
     name: item.name,
     matches: item.matches,
-    subtitle: `Matches ${item.matches} items in your wardrobe`,
+    subtitle: `Example — ${item.matches} style matches`,
     imageUrl: item.imageUrl,
     href: "/analysis/demo",
   }));

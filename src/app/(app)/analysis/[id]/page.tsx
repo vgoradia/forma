@@ -30,13 +30,16 @@ function loadScan(id: string): {
 }
 
 function AnalysisContent({ id }: { id: string }) {
-  const [analysis, setAnalysis] = useState<ProductAnalysis | null>(
-    () => loadScan(id).analysis
-  );
-  const [imagePreview] = useState<string | undefined>(() => loadScan(id).imagePreview);
+  const [analysis, setAnalysis] = useState<ProductAnalysis | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | undefined>();
+  const [hydrated, setHydrated] = useState(false);
   const backfillAttempted = useRef(false);
 
   useEffect(() => {
+    const loaded = loadScan(id);
+    setAnalysis(loaded.analysis);
+    setImagePreview(loaded.imagePreview);
+    setHydrated(true);
     backfillAttempted.current = false;
   }, [id]);
 
@@ -106,6 +109,18 @@ function AnalysisContent({ id }: { id: string }) {
       cancelled = true;
     };
   }, [id, analysis, imagePreview]);
+
+  if (!hydrated) {
+    return (
+      <PageContainer>
+        <div className="animate-pulse space-y-4 py-8">
+          <div className="h-8 w-48 rounded-lg bg-gray-200" />
+          <div className="h-56 rounded-3xl bg-gray-100" />
+          <div className="h-32 rounded-2xl bg-gray-100" />
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (!analysis) {
     return (
