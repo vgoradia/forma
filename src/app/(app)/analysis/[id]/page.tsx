@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AnalysisDetail } from "@/components/analysis-detail";
@@ -37,9 +37,11 @@ function AnalysisContent({ id }: { id: string }) {
 
   useEffect(() => {
     const loaded = loadScan(id);
-    setAnalysis(loaded.analysis);
-    setImagePreview(loaded.imagePreview);
-    setHydrated(true);
+    startTransition(() => {
+      setAnalysis(loaded.analysis);
+      setImagePreview(loaded.imagePreview);
+      setHydrated(true);
+    });
     backfillAttempted.current = false;
   }, [id]);
 
