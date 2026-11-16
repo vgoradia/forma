@@ -11,3 +11,14 @@ export function getAppUrl(): string {
     return DEFAULT_APP_URL;
   }
 }
+
+/** Canonical origin for Supabase OAuth redirects (must match Supabase redirect allow list). */
+export function getAuthSiteOrigin(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return window.location.origin;
+    }
+  }
+  return getAppUrl();
+}

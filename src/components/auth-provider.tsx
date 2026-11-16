@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { User } from "@supabase/supabase-js";
+import { getAuthSiteOrigin } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { withTimeout } from "@/lib/resilience";
@@ -63,15 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!configured) return;
 
       const supabase = createClient();
-      const origin = window.location.origin;
+      const origin = getAuthSiteOrigin();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
         },
       });
 

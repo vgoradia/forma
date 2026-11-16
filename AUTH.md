@@ -46,7 +46,7 @@ In Supabase → **Authentication → URL Configuration**:
 | Field | Value |
 |-------|--------|
 | Site URL | `https://www.shopwithforma.com` |
-| Redirect URLs | `https://www.shopwithforma.com/auth/callback`, `http://localhost:3000/auth/callback` |
+| Redirect URLs | `https://www.shopwithforma.com/auth/callback`, `https://shopwithforma.com/auth/callback`, `http://localhost:3000/auth/callback` |
 
 ## 6. Test locally
 
