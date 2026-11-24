@@ -20,6 +20,13 @@ export default function WardrobePage() {
 
   return (
     <PageContainer>
+      <p className="mb-4 rounded-2xl border border-forma-border bg-white px-4 py-3 text-xs text-forma-muted">
+        Bonus view from your scans — core flow is{" "}
+        <Link href="/scan" className="font-semibold text-forma-primary">
+          Scan → Verdict
+        </Link>
+        .
+      </p>
       <div className="mb-6 flex items-center justify-between lg:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Wardrobe</h1>

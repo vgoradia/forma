@@ -5,9 +5,9 @@ import { LogoWordmark } from "@/components/logo";
 import { getAppUrl } from "@/lib/app-url";
 
 export const metadata: Metadata = {
-  title: "About Forma — Built to fix online shopping",
+  title: "About Forma — Buy or skip before you checkout",
   description:
-    "Forma is an AI shopping copilot that helps you decide whether to buy — with live prices, dupes, reviews, and a clear verdict. Built by a student founder.",
+    "Forma is the buy-or-skip button for viral fashion. Scan a find, get prices and dupes, and a clear buy / wait / skip verdict. Built by Veer Goradia.",
 };
 
 const stats = [
@@ -39,7 +39,7 @@ export default function AboutPage() {
             href="/scan"
             className="rounded-xl bg-forma-primary px-4 py-2 text-sm font-semibold text-white hover:bg-forma-primary-dark"
           >
-            Try Forma
+            Get my verdict
           </Link>
         </div>
       </header>
@@ -47,13 +47,12 @@ export default function AboutPage() {
       <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
         <p className="mb-3 text-sm font-medium text-forma-primary">About Forma</p>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          The first place to go before you buy anything online
+          Stop impulse-buying what you saw on TikTok
         </h1>
         <p className="mt-5 text-lg leading-relaxed text-forma-muted">
-          Online shopping is broken. You find something on TikTok or Pinterest, then spend 45 minutes
-          hunting for the exact item, comparing prices, reading reviews, and still wondering if you
-          should buy it. Forma fixes that — upload a screenshot or paste a link, and get everything
-          you need to decide in one place.
+          Forma is a consumer app for one moment: you found something cute on social, and you need to know
+          if you should actually buy it. Scan the screenshot or link — get prices, dupes, review signal, and a
+          buy / wait / skip verdict in seconds.
         </p>
 
         <div className="mt-8 grid grid-cols-3 gap-3">
@@ -84,11 +83,11 @@ export default function AboutPage() {
               <h2 className="text-lg font-semibold text-gray-900">What Forma does</h2>
             </div>
             <ul className="space-y-2 text-sm text-forma-muted">
-              <li>• Identifies products from screenshots, images, or links</li>
-              <li>• Finds the lowest live price across retailers</li>
-              <li>• Surfaces premium, similar, and budget dupes</li>
-              <li>• Summarizes reviews into pros, cons, and scores</li>
-              <li>• Delivers a clear Buy / Wait / Skip verdict</li>
+              <li>• Scan a screenshot, image, or product link</li>
+              <li>• Lowest price + budget dupes side by side</li>
+              <li>• Review signal without reading 200 comments</li>
+              <li>• One verdict: Buy, Wait, or Skip</li>
+              <li>• Share the verdict before your group chat checks out</li>
             </ul>
           </div>
 

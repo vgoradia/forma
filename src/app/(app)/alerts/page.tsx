@@ -28,6 +28,13 @@ export default function AlertsPage() {
 
   return (
     <PageContainer>
+      <p className="mb-4 rounded-2xl border border-forma-border bg-white px-4 py-3 text-xs text-forma-muted">
+        Save a verdict first — then watch prices here. Start with a{" "}
+        <Link href="/scan" className="font-semibold text-forma-primary">
+          new scan
+        </Link>
+        .
+      </p>
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Alerts</h1>
         <p className="text-sm text-forma-muted lg:text-base">Price drops and sale predictions</p>

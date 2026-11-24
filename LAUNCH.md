@@ -1,143 +1,143 @@
-# Forma — Launch checklist
+# Forma — Launch playbook
 
-**Live URL:** https://shopwithforma.com
-
----
-
-## Today (product polish + deploy) ✅
-
-Ship these so the product looks professional when you share it.
-
-- [x] Fix favicon / tab icon (Forma logo, not Vercel)
-- [x] Analytics events: `scan_completed`, `share_analysis`
-- [x] Share links with UTM tracking (`utm_source=share`)
-- [x] `/about` page (college app + credibility)
-- [x] OG image with real Forma logo
-- [x] Landing footer + JSON-LD SEO
-- [x] Demo page CTA → drives users to scan
-- [x] **Push to GitHub + redeploy on Vercel**
-- [x] Confirm `NEXT_PUBLIC_APP_URL=https://www.shopwithforma.com` in Vercel env
+**Positioning:** The buy-or-skip button for viral fashion.  
+**URL:** https://www.shopwithforma.com  
+**Primary CTA:** https://www.shopwithforma.com/scan
 
 ---
 
-## Growth day — Saturday Aug 15 🚀
+## Phase 1 — Product (finish before the launch video)
 
-**Pre-flight:** Live site OK (`/analysis/demo` shows Shopbop, auth + Stripe wired). Start here.
+Do **not** film the launch video until every item here passes on **production** (phone + desktop).
 
-### Morning — distribution (~2 hours)
+### Core loop
+- [ ] Landing → **Get my verdict** → `/scan` loads fast
+- [ ] Real scan (screenshot or link) completes in &lt; 30s with prices + dupes
+- [ ] Verdict shows **Buy / Wait / Skip** + **Share verdict** copies link with UTM
+- [ ] `/analysis/demo` works with no signup (for cold traffic)
+- [ ] Google sign-in works (incognito test on www)
+- [ ] Free tier shows **8 scans/month** banner; Plus unlocks unlimited (test Stripe checkout once)
 
-- [ ] **Reddit** — r/femalefashionadvice or r/Frugal (copy below)
-- [ ] **X post** — short hook + link (copy below)
-- [ ] **LinkedIn** — personal profile post, not a company page (copy below)
-- [ ] **TikTok/Reels** — 15-sec screen record (script in `COLLEGE.md`)
+### Monetization (week 1 of launch, not day 0 blockers)
+- [ ] Amazon Associates approved + `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG` in Vercel → redeploy
+- [ ] Click a **Buy** link after scan → Amazon URL contains your `tag=`
 
-**No friends blast** — distribution is public channels only.
+### Polish
+- [x] B2C positioning (buy or skip, simplified nav)
+- [x] Share verdict copy + UTM
+- [x] OG / favicon / about page aligned
+- [ ] You personally run **3 real scans** on things you’d actually buy
 
-**Primary share link:** https://www.shopwithforma.com/scan?utm_source=share&utm_medium=referral&utm_campaign=launch
-
-### Afternoon — monetization + metrics (~1 hour)
-
-- [ ] **Amazon Associates** — sign up at https://affiliate-program.amazon.com
-- [ ] Add `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG=yourname-20` in Vercel → Settings → Environment Variables → **Redeploy**
-- [ ] **Vercel Analytics** — screenshot visits + `scan_completed` + `share_analysis` events
-- [ ] **Fill metrics** in `COLLEGE.md` (Week 1 baseline)
-
-### Optional — big spike (later this week)
-
-- [ ] **Product Hunt** — schedule Tuesday 12:01 AM PT
-- [ ] **Hacker News Show HN** — if you want a tech audience
+**When Phase 1 is green → Phase 2.**
 
 ---
 
-## Copy/paste posts (ready to use)
+## Phase 2 — Launch video (30 seconds)
 
-### X (Twitter)
-> Built an AI shopping copilot that answers the question TikTok never does: should you actually buy it?
+One clip for **Reels, TikTok, and X**. Vertical 9:16. Face optional; screen recording is enough.
+
+### Storyboard
+| Sec | Visual | On-screen text / VO |
+|-----|--------|---------------------|
+| 0–3 | TikTok fashion screenshot | “Saw this on TikTok…” |
+| 3–8 | Open Forma → paste/upload | “…so I scanned it on Forma” |
+| 8–15 | Loading → verdict card | “Buy, Wait, or Skip” |
+| 15–22 | Dupes + lowest price | “Cheaper dupe at $XX” |
+| 22–27 | Tap **Share verdict** | “Sent it to the group chat” |
+| 27–30 | End card: logo + URL | **shopwithforma.com** — free |
+
+### Recording tips
+- Use a **real** viral-style product (dress, sneaker, bag) — not demo unless demo looks identical
+- End on **SKIP** or **dupe** for drama (more shares than “BUY”)
+- Link in bio: `/scan?utm_source=launch&utm_medium=video&utm_campaign=nov2026`
+
+---
+
+## Phase 3 — Socials (same day as video)
+
+### Handles (pick consistent @)
+- Instagram / TikTok: `@shopwithforma` or `@formashop` (whatever’s free)
+- X: same handle if possible
+
+### Bio (all platforms)
+> Buy or skip before you checkout 👗  
+> Scan TikTok finds → prices, dupes, verdict  
+> Free ↓
+
+**Link:** https://www.shopwithforma.com/scan
+
+### Pin one post
+Hook: *“TikTok made you want it. Forma tells you if you should buy it.”*  
+Media: launch video  
+CTA: link in bio
+
+---
+
+## Phase 4 — Distribution (week 1)
+
+| Channel | Action |
+|---------|--------|
+| **IG Reels** | Launch video + 2 more scans (different products) |
+| **TikTok** | Same video, hashtags `#tiktokmademebuyit` `#fashiondupes` `#shopwithforma` |
+| **X** | Founder thread (copy below) + clip |
+| **LinkedIn** | Founder story + demo screenshot (credibility) |
+
+**Do not** spam Reddit or friends blast until you have 10+ real stranger scans from social.
+
+### X — launch thread (single post version)
+> TikTok never tells you if you should actually buy it.
 >
-> Upload a screenshot → lowest price, dupes, review summary, buy/wait/skip verdict in ~15 sec.
+> I built Forma — screenshot the find → buy / wait / skip + lowest price & dupes in ~15 sec.
 >
 > Free: https://www.shopwithforma.com/scan
 >
-> Would love feedback 🙏
+> Launch video in replies 👇
 
-### LinkedIn (personal profile — add screenshot of /analysis/demo)
-> I built Forma — an AI shopping copilot for smarter online purchases.
+### LinkedIn
+> I’m building Forma — a consumer app for the moment after you see something on TikTok: **should you buy it?**
 >
-> The problem: you see something on TikTok or Pinterest, then spend 45 minutes reverse-image-searching, comparing prices across tabs, and reading reviews — and still aren't sure if you should buy.
+> One scan → prices, dupes, review signal, and a clear buy / wait / skip verdict. Free to start; Forma Plus for unlimited scans and price watches.
 >
-> Forma collapses that into one upload. Paste a screenshot, link, or product name and get:
-> • Live price comparison across retailers
-> • Budget dupes + premium alternatives
-> • AI review summary (pros, cons, quality score)
-> • A clear buy / wait / skip verdict
+> Try it: https://www.shopwithforma.com/analysis/demo
 >
-> I built the full stack solo — Next.js, Claude, Serper, deployed at shopwithforma.com with Google auth and Stripe subscriptions.
->
-> Try it free (no signup required): https://www.shopwithforma.com/analysis/demo
->
-> Would love your feedback — what would make this useful before your next purchase?
-
-### Reddit (r/femalefashionadvice, r/Frugal)
-> **Title:** I built a free tool that finds dupes + lowest price from any screenshot
->
-> **Body:** Hey — got tired of TikTok shopping rabbit holes so I built Forma. Upload a screenshot or paste a link, get lowest price, alternatives, review summary, and buy/wait/skip verdict. Free, no signup. Would love feedback: https://shopwithforma.com
-
-### TikTok / Instagram story
-15-sec screen record: upload screenshot → show verdict card → "link in bio → shopwithforma.com"
-
-### Product Hunt
-**Tagline:** AI copilot that tells you whether to buy — not just what to buy  
-**Link:** https://shopwithforma.com
+> [Attach demo or launch video]
 
 ---
 
-## Metrics for college apps
+## Metrics that matter (B2C, not vanity)
 
-Track in Vercel Analytics (Events tab):
+| Metric | Week 1 target | Why |
+|--------|---------------|-----|
+| `scan_completed` | 100+ | Real usage |
+| `share_analysis` | 25+ | Viral loop |
+| Scan → share rate | 10%+ | Product fit signal |
+| Plus checkouts | Any | Someone paid = business |
 
-| Event | What it means |
-|-------|---------------|
-| Page views | Total traffic |
-| `scan_completed` | Real product usage |
-| `share_analysis` | Viral loop working |
-
-**Week 1 goals:** 500+ visits, 100+ scans, 25+ shares
-
-See `COLLEGE.md` for essay paragraphs and demo video script.
+Track in **Vercel Analytics → Events**.
 
 ---
 
-### Amazon Associates (step-by-step)
+## Vercel env (production)
 
-1. Go to https://affiliate-program.amazon.com and sign up (use the same email as your site if possible).
-2. Complete the profile — website URL: `https://www.shopwithforma.com`, describe Forma as a shopping comparison tool.
-3. Once approved, copy your **Store ID** (format: `yourname-20`).
-4. Vercel → your Forma project → **Settings** → **Environment Variables**:
-   - Name: `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG`
-   - Value: `yourname-20`
-   - Apply to Production → Save → **Redeploy** (Deployments → ⋯ → Redeploy).
-5. Test: run a scan, click an Amazon link, confirm URL contains `tag=yourname-20`.
-
-Code already applies the tag automatically via `src/lib/affiliate.ts` — you only need the env var.
+| Variable | Required |
+|----------|----------|
+| `ANTHROPIC_API_KEY` | Yes |
+| `SERPER_API_KEY` | Yes |
+| `NEXT_PUBLIC_APP_URL` | `https://www.shopwithforma.com` |
+| `NEXT_PUBLIC_SUPABASE_*` | For Google sign-in |
+| `STRIPE_*` | For Forma Plus |
+| `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG` | When approved |
 
 ---
 
-## Vercel env vars
+## What “million-dollar startup” actually means here
 
-| Variable | Required | Value |
-|----------|----------|-------|
-| `ANTHROPIC_API_KEY` | Yes | your key |
-| `SERPER_API_KEY` | Yes | your key |
-| `NEXT_PUBLIC_APP_URL` | Yes | `https://www.shopwithforma.com` |
-| `NEXT_PUBLIC_AMAZON_AFFILIATE_TAG` | Optional | e.g. `yourname-20` |
+1. **One wedge** — social fashion impulse (done in product).  
+2. **One loop** — scan → verdict → share (built).  
+3. **Two revenue lines** — affiliate on BUY + Forma Plus (wired).  
+4. **One channel** — short video until CAC is understood.
 
----
+Scale comes **after** week-1 retention and shares, not before launch day.
 
-## Smoke test after deploy
-
-- [ ] Tab shows Forma favicon (not Vercel triangle)
-- [ ] `/about` loads
-- [ ] `/analysis/demo` → "Scan your own product" CTA
-- [ ] Real scan completes with prices + images
-- [ ] Share button copies link with `utm_source=share`
-- [ ] Link preview shows Forma OG image on iMessage/Twitter
+**Your job before we call launch:** Phase 1 checklist on your phone.  
+**Our job after:** iterate on whatever breaks in real usage.

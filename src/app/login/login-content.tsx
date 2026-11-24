@@ -22,7 +22,7 @@ export function LoginContent() {
     <>
       <h1 className="text-2xl font-bold text-gray-900">Sign in to Forma</h1>
       <p className="mt-2 text-sm leading-relaxed text-forma-muted">
-        Create a free account with Google, or continue as a guest and start scanning right away.
+        Sign in saves your account for Plus and alerts. Guests can still scan free — no account required.
       </p>
 
       <div className="mt-8 space-y-3">
