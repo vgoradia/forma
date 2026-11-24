@@ -93,9 +93,10 @@ Acquirers rarely pay “AI magic” premiums for solo apps. They pay for **traff
 ## Product priorities aligned with exit (engineering)
 
 **Do next (high ROI for sale):**
-1. Cloud scan history for signed-in users
-2. Revenue + funnel events (done: affiliate click, checkout started)
-3. Legal pages (done: `/privacy`, `/terms`)
+1. ~~Cloud scan history for signed-in users~~ (code shipped — run `supabase/schema.sql` + `SUPABASE_SERVICE_ROLE_KEY`)
+2. ~~Server-side free scan limits~~ (same schema + service role)
+3. Revenue + funnel events (done: affiliate click, checkout started)
+4. Legal pages (done: `/privacy`, `/terms`)
 
 **Do not** before M3 unless metrics demand it: social network, marketplace, B2B API, 10 new tabs.
 

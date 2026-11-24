@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { analyzeProduct } from "@/lib/ai";
 import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { assertCanAnalyze, recordServerScanUsage } from "@/lib/scan-usage-server";
+import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
   sanitizeApiError,
   validateImageUpload,
@@ -107,6 +110,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let user = null;
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
+
+  const entitlement = await assertCanAnalyze({ user, ip });
+  if (!entitlement.ok) {
+    return NextResponse.json(
+      {
+        error: entitlement.message,
+        code: "scan_limit_reached",
+        used: entitlement.used,
+        limit: entitlement.limit,
+      },
+      { status: entitlement.status }
+    );
+  }
+
   try {
     const parsed = await parseAnalyzeInput(request);
     if (!parsed.ok) {
@@ -114,6 +137,7 @@ export async function POST(request: NextRequest) {
     }
 
     const analysis = await analyzeProduct(parsed.input);
+    await recordServerScanUsage(entitlement.subjectKey, entitlement.plan);
     return NextResponse.json(sanitizeProductAnalysis(analysis));
   } catch (error) {
     console.error("Analysis error:", error);

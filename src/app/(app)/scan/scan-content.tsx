@@ -11,6 +11,7 @@ import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
 import { trackEvent } from "@/lib/analytics";
 import { canStartScan, recordScanUsage } from "@/lib/scan-quota";
+import { pushScanToCloud } from "@/lib/scans-cloud";
 import { ScanQuotaBanner } from "@/components/scan-quota-banner";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
@@ -67,7 +68,13 @@ export function ScanContent() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          code?: string;
+        };
+        if (res.status === 402 || data.code === "scan_limit_reached") {
+          trackEvent("scan_limit_reached");
+        }
         throw new Error(data.error ?? "Analysis failed");
       }
 
@@ -90,7 +97,7 @@ export function ScanContent() {
 
       const analysis = sanitizeProductAnalysis(analysisWithPreview);
 
-      saveScan({
+      const stored = {
         id: data.id,
         analysis,
         source,
@@ -102,7 +109,10 @@ export function ScanContent() {
               : String(formData.get("query") ?? "Text search"),
         savedAt: new Date().toISOString(),
         imagePreview: meta?.imagePreview,
-      });
+      } as const;
+
+      saveScan(stored);
+      void pushScanToCloud(stored);
 
       recordScanUsage(isPlus);
       trackEvent("scan_completed", { source, product: data.identifiedProduct.brand });

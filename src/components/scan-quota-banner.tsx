@@ -7,6 +7,13 @@ import { FREE_SCANS_PER_MONTH, getScanQuota } from "@/lib/scan-quota";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { cn } from "@/lib/utils";
 
+type UsageResponse = {
+  remaining: number;
+  used: number;
+  limit: number;
+  enforced?: boolean;
+};
+
 export function ScanQuotaBanner({
   className,
   showUpgradeLink = true,
@@ -16,13 +23,29 @@ export function ScanQuotaBanner({
 }) {
   const { plan, loading } = useSubscriptionPlan();
   const [tick, setTick] = useState(0);
+  const [serverUsage, setServerUsage] = useState<UsageResponse | null>(null);
+
   useEffect(() => subscribeStorage(() => setTick((n) => n + 1)), []);
-  void tick;
-  const quota = getScanQuota();
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/scan-usage", { credentials: "include" });
+        if (!res.ok) return;
+        const data = (await res.json()) as UsageResponse;
+        if (data.enforced) setServerUsage(data);
+      } catch {
+        // Fall back to local quota display.
+      }
+    })();
+  }, [tick, plan]);
 
   if (loading || plan === "plus") return null;
 
-  const atLimit = quota.remaining === 0;
+  const local = getScanQuota();
+  const remaining = serverUsage?.remaining ?? local.remaining;
+  const limit = serverUsage?.limit ?? FREE_SCANS_PER_MONTH;
+  const atLimit = remaining === 0;
 
   return (
     <div
@@ -37,7 +60,7 @@ export function ScanQuotaBanner({
       <p className="font-medium text-gray-900">
         {atLimit
           ? "You've used your free scans this month"
-          : `${quota.remaining} of ${FREE_SCANS_PER_MONTH} free scans left this month`}
+          : `${remaining} of ${limit} free scans left this month`}
       </p>
       <p className="mt-0.5 text-xs text-forma-muted">
         {atLimit

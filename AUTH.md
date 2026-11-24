@@ -48,7 +48,13 @@ In Supabase → **Authentication → URL Configuration**:
 | Site URL | `https://www.shopwithforma.com` |
 | Redirect URLs | `https://www.shopwithforma.com/auth/callback`, `https://shopwithforma.com/auth/callback`, `http://localhost:3000/auth/callback` |
 
-## 6. Test locally
+## 6. Cloud scans + server quota (recommended for production)
+
+1. In Supabase → **SQL Editor**, run the script in **`supabase/schema.sql`** in this repo.
+2. Add **`SUPABASE_SERVICE_ROLE_KEY`** to Vercel env (Settings → API → service role). **Never expose it to the client.**
+3. Redeploy. Free scans are enforced on the server; signed-in users sync scan history to Supabase.
+
+## 7. Test locally
 
 ```bash
 npm run dev

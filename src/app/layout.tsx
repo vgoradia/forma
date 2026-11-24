@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { CloudScanSync } from "@/components/cloud-scan-sync";
 import { getAppUrl } from "@/lib/app-url";
 import "./globals.css";
 
@@ -43,8 +44,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Forma — AI Shopping Copilot",
-    description: "Should you buy it? Forma knows.",
+    title: "Forma — Buy or skip before you checkout",
+    description: "Screenshot viral fashion finds. Get prices, dupes, and a buy / wait / skip verdict.",
   },
 };
 
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
+          <CloudScanSync />
           {children}
         </AuthProvider>
         <AnalyticsProvider />
