@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/app-url";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimit, denyRateLimit, getClientIp } from "@/lib/rate-limit";
 import { buildShareUrl } from "@/lib/share-url";
 import { insertSharedVerdict } from "@/lib/shared-verdict-store";
 import { isBlockedHostname } from "@/lib/security";
@@ -10,11 +10,12 @@ const MAX_BODY_CHARS = 100_000;
 const MAX_SHARES_PER_MINUTE = 20;
 
 export async function POST(request: NextRequest) {
-  const limit = checkRateLimit(`share:${getClientIp(request)}`, MAX_SHARES_PER_MINUTE);
+  const limit = await checkRateLimit(`share:${getClientIp(request)}`, MAX_SHARES_PER_MINUTE);
   if (!limit.ok) {
-    return NextResponse.json(
-      { error: `Too many shares. Try again in ${limit.retryAfter}s.` },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    return denyRateLimit(
+      limit,
+      (seconds) => `Too many shares. Try again in ${seconds}s.`,
+      "Try again in a minute."
     );
   }
 

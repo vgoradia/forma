@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeProduct } from "@/lib/ai";
 import { sanitizeProductAnalysis } from "@/lib/scan-validation";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { assertCanAnalyze, recordServerScanUsage } from "@/lib/scan-usage-server";
+import { ANALYZE_REQUESTS_PER_MINUTE, checkRateLimit, denyRateLimit, getClientIp } from "@/lib/rate-limit";
+import { SCANS_UNAVAILABLE_MESSAGE } from "@/lib/scan-quota";
+import { releaseScan, reserveScan } from "@/lib/scan-usage-server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
@@ -101,12 +102,12 @@ async function parseAnalyzeInput(request: NextRequest): Promise<
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const limit = checkRateLimit(`analyze:${ip}`);
-
-  if (!limit.ok) {
-    return NextResponse.json(
-      { error: `Too many requests. Try again in ${limit.retryAfter}s.` },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+  const ipLimit = await checkRateLimit(`analyze:ip:${ip}`, ANALYZE_REQUESTS_PER_MINUTE);
+  if (!ipLimit.ok) {
+    return denyRateLimit(
+      ipLimit,
+      (seconds) => `Too many requests. Try again in ${seconds}s.`,
+      SCANS_UNAVAILABLE_MESSAGE
     );
   }
 
@@ -117,12 +118,26 @@ export async function POST(request: NextRequest) {
     user = data.user;
   }
 
-  const entitlement = await assertCanAnalyze({ user, ip });
+  if (user) {
+    const userLimit = await checkRateLimit(
+      `analyze:user:${user.id}`,
+      ANALYZE_REQUESTS_PER_MINUTE
+    );
+    if (!userLimit.ok) {
+      return denyRateLimit(
+        userLimit,
+        (seconds) => `Too many requests. Try again in ${seconds}s.`,
+        SCANS_UNAVAILABLE_MESSAGE
+      );
+    }
+  }
+
+  const entitlement = await reserveScan({ user, ip });
   if (!entitlement.ok) {
     return NextResponse.json(
       {
         error: entitlement.message,
-        code: "scan_limit_reached",
+        code: entitlement.code,
         used: entitlement.used,
         limit: entitlement.limit,
       },
@@ -133,13 +148,14 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = await parseAnalyzeInput(request);
     if (!parsed.ok) {
+      if (entitlement.reserved) await releaseScan(entitlement.subjectKey, entitlement.month);
       return NextResponse.json({ error: parsed.error }, { status: parsed.status });
     }
 
     const analysis = await analyzeProduct(parsed.input);
-    await recordServerScanUsage(entitlement.subjectKey, entitlement.plan);
     return NextResponse.json(sanitizeProductAnalysis(analysis));
   } catch (error) {
+    if (entitlement.reserved) await releaseScan(entitlement.subjectKey, entitlement.month);
     console.error("Analysis error:", error);
     return NextResponse.json(
       { error: sanitizeApiError(error, "Analysis failed. Please try again.") },
