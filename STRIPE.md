@@ -33,7 +33,7 @@ Stripe → **Developers → Webhooks → Add endpoint**
 | Field | Value |
 |-------|--------|
 | URL | `https://www.shopwithforma.com/api/stripe/webhook` |
-| Events | `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted` |
+| Events | `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed` |
 
 Copy the **Signing secret** → `STRIPE_WEBHOOK_SECRET`
 
@@ -82,6 +82,24 @@ Redeploy after adding to Vercel.
 2. Go to **Profile → Upgrade to Forma Plus**
 3. Use Stripe test card: `4242 4242 4242 4242`, any future expiry, any CVC
 4. Success → `/plus/success` → profile shows **Forma Plus**
+
+## Stripe go-live checklist
+
+Switch the Dashboard to **live mode** and confirm each item before charging real customers:
+
+- [ ] Live secret key (`sk_live_...`) in `STRIPE_SECRET_KEY`
+- [ ] Live publishable key (`pk_live_...`) in `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- [ ] Live Price ID for Forma Plus at $9.99/month (`price_...`) in `STRIPE_PRICE_ID`
+- [ ] Live webhook endpoint `https://www.shopwithforma.com/api/stripe/webhook` subscribed to:
+  - `checkout.session.completed`
+  - `customer.subscription.created`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+  - `invoice.payment_failed`
+- [ ] Live webhook signing secret (`whsec_...`) in `STRIPE_WEBHOOK_SECRET`
+- [ ] Billing Portal turned on, with cancellation allowed (Settings → Billing → Customer portal)
+
+The portal return URL is `/profile`. Plus subscribers open it from **Manage or cancel subscription** on that page.
 
 ## Notes
 

@@ -3,7 +3,12 @@ import { getAppUrl } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getStripePriceId, isStripeConfigured } from "@/lib/stripe/config";
-import { getStripe } from "@/lib/stripe/server";
+import { stripeCustomerId } from "@/lib/stripe/customer";
+import {
+  createBillingPortalSession,
+  findActivePlusSubscription,
+  getStripe,
+} from "@/lib/stripe/server";
 
 export async function POST() {
   if (!isStripeConfigured()) {
@@ -25,6 +30,16 @@ export async function POST() {
 
   const stripe = getStripe();
   const appUrl = getAppUrl();
+
+  const existing = await findActivePlusSubscription(stripe, user.email);
+  const existingCustomerId = existing ? stripeCustomerId(existing.customer) : null;
+  if (existingCustomerId) {
+    const portal = await createBillingPortalSession(stripe, existingCustomerId);
+    if (!portal.url) {
+      return NextResponse.json({ error: "Could not open the billing portal." }, { status: 500 });
+    }
+    return NextResponse.json({ url: portal.url });
+  }
 
   const customers = await stripe.customers.list({ email: user.email, limit: 1 });
   const customerId = customers.data[0]?.id;
