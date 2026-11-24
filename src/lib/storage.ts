@@ -30,15 +30,18 @@ export interface UserPrefs {
 }
 
 const defaultPrefs: UserPrefs = {
-  priceDropAlerts: true,
+  priceDropAlerts: false,
   salePredictions: true,
   alternativeAlerts: true,
   reviewSummaries: true,
   weeklyDigest: true,
-  priceDropPush: true,
+  priceDropPush: false,
   savedItemReminders: false,
   emailUpdates: false,
 };
+
+const EMPTY_SCANS: StoredScan[] = [];
+const EMPTY_BOOKMARKS: string[] = [];
 
 let cachedScansRaw: string | null | undefined;
 let cachedScansList: StoredScan[] = [];
@@ -190,7 +193,7 @@ export function savePrefs(prefs: UserPrefs) {
 }
 
 export function useScans(): StoredScan[] {
-  return useSyncExternalStore(subscribeStorage, getScansSnapshot, () => []);
+  return useSyncExternalStore(subscribeStorage, getScansSnapshot, () => EMPTY_SCANS);
 }
 
 export function useLastScan(): StoredScan | null {
@@ -198,5 +201,5 @@ export function useLastScan(): StoredScan | null {
 }
 
 export function useBookmarkIds(): string[] {
-  return useSyncExternalStore(subscribeStorage, getBookmarksSnapshot, () => []);
+  return useSyncExternalStore(subscribeStorage, getBookmarksSnapshot, () => EMPTY_BOOKMARKS);
 }

@@ -25,7 +25,7 @@ const features = [
   {
     icon: Tag,
     title: "Get the verdict",
-    description: "Buy, wait, or skip — with lowest price, dupes, and review signal in one card.",
+    description: "Buy, wait, or skip — with prices, dupes, and review signal in one card.",
   },
   {
     icon: Share2,
@@ -37,7 +37,7 @@ const features = [
 const steps = [
   { step: "1", title: "Scan", description: "Screenshot, link, or quick description" },
   { step: "2", title: "Verdict", description: "Buy · Wait · Skip with prices & dupes" },
-  { step: "3", title: "Act", description: "Buy the dupe, wait for a drop, or move on" },
+  { step: "3", title: "Act", description: "Buy, wait, or move on" },
 ];
 
 const proof = [
@@ -83,7 +83,7 @@ export default function LandingPage() {
               How it works
             </a>
             <Link href="/analysis/demo" className="text-sm text-forma-muted hover:text-gray-900">
-              Live demo
+              Sample verdict
             </Link>
           </nav>
           <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function LandingPage() {
                     href="/analysis/demo"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-forma-border bg-white px-6 py-4 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
                   >
-                    See live demo
+                    See a sample
                   </Link>
                 </div>
                 <p className="mt-4 text-sm text-forma-muted">Sign in with Google or try as guest • Works on mobile & desktop</p>
@@ -164,9 +164,9 @@ export default function LandingPage() {
               >
                 <div className="mb-4 flex items-center gap-2">
                   <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
-                    Live preview
+                    Sample verdict
                   </span>
-                  <span className="text-xs text-forma-muted">Tap to see full analysis →</span>
+                  <span className="text-xs text-forma-muted">Illustrative estimate, not a live price →</span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -178,9 +178,10 @@ export default function LandingPage() {
                   <div className="space-y-3 sm:col-span-3">
                     <div>
                       <p className="text-xs text-forma-muted">Reformation Juliette Knit Dress</p>
-                      <p className="text-xs text-forma-muted">Lowest price found</p>
-                      <p className="text-2xl font-bold text-emerald-600">$178</p>
+                      <p className="text-xs text-forma-muted">Sample estimated price</p>
+                      <p className="text-2xl font-bold text-emerald-600">about $178</p>
                       <p className="text-sm text-gray-600">at Nordstrom</p>
+                      <p className="text-[11px] text-forma-muted">AI sample — not a real Nordstrom price</p>
                     </div>
                     <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
                       92% match • Buy recommended

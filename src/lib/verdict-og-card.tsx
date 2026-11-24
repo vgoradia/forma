@@ -28,7 +28,10 @@ export async function renderVerdictImage(verdict: SharedVerdict) {
   const tone = verdictTone(verdict.verdict.recommendation);
   const title = clip(formatProductTitle(verdict.product.brand, verdict.product.name) || "This find", 64);
   const headline = clip(verdict.verdict.headline, 110);
+  const verified = verdict.lowestPrice.priceVerified && !verdict.lowestPrice.estimated;
   const price = formatPrice(verdict.lowestPrice.price);
+  const priceLabel = verified ? "Lowest price" : "Estimated price";
+  const priceText = verified ? price : `about ${price}`;
   const retailer = clip(verdict.lowestPrice.retailer, 32);
 
   return new ImageResponse(
@@ -65,8 +68,8 @@ export async function renderVerdictImage(verdict: SharedVerdict) {
         </div>
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-          <span style={{ fontSize: 24, color: "#A1A1AA" }}>Lowest price</span>
-          <span style={{ fontSize: 40, fontWeight: 700, color: tone.onDark }}>{price}</span>
+          <span style={{ fontSize: 24, color: "#A1A1AA" }}>{priceLabel}</span>
+          <span style={{ fontSize: 40, fontWeight: 700, color: tone.onDark }}>{priceText}</span>
           <span style={{ fontSize: 24, color: "#E4E4E7" }}>at {retailer}</span>
         </div>
       </div>

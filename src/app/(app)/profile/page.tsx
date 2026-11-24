@@ -139,7 +139,7 @@ export default function ProfilePage() {
   return (
     <PageContainer>
       <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Profile</h1>
-      <p className="mt-1 text-sm text-forma-muted">Forma Plus, alerts, and account</p>
+      <p className="mt-1 text-sm text-forma-muted">Forma Plus and account</p>
 
       {status && (
         <p className="mt-4 rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">{status}</p>
@@ -209,7 +209,7 @@ export default function ProfilePage() {
             value={wardrobeCount > 0 ? `${wardrobeCount} items from scans` : "Scan to start"}
             href="/wardrobe"
           />
-          <SettingsRow icon={Bell} label="Price watches" value="Alerts & saved drops" href="/alerts" />
+          <SettingsRow icon={Bell} label="Price watches" value="Coming soon" href="/alerts" />
         </div>
       </section>
 
@@ -221,15 +221,15 @@ export default function ProfilePage() {
           <div className="divide-y divide-gray-100 rounded-2xl border border-forma-border bg-white px-4">
             <ToggleRow
               icon={Wallet}
-              label="Price-drop alerts"
-              description="Notify me when watched items hit a target price"
+              label="Notify me when price alerts launch"
+              description="Saves your interest on this device only. Forma is not watching prices and will not email you yet."
               checked={prefs.priceDropAlerts}
               onChange={(v) => updatePref("priceDropAlerts", v)}
             />
             <ToggleRow
               icon={Sparkles}
-              label="Sale predictions"
-              description="Show likely markdown timing before I buy"
+              label="Sale estimates"
+              description="Show an AI guess about sale timing on verdicts. Not a confirmed sale or price history."
               checked={prefs.salePredictions}
               onChange={(v) => updatePref("salePredictions", v)}
             />
@@ -274,12 +274,7 @@ export default function ProfilePage() {
               checked={prefs.weeklyDigest}
               onChange={(v) => updatePref("weeklyDigest", v)}
             />
-            <ToggleRow
-              icon={Wallet}
-              label="Price-drop push alerts"
-              checked={prefs.priceDropPush}
-              onChange={(v) => updatePref("priceDropPush", v)}
-            />
+            <SettingsRow icon={Wallet} label="Price-drop push alerts" value="Coming soon" />
             <ToggleRow
               icon={Heart}
               label="Saved item reminders"

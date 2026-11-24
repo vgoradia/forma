@@ -32,12 +32,16 @@ export function getVerdictSharePayload(options: {
   headline: string;
   lowestPrice: string;
   retailer: string;
+  priceEstimated?: boolean;
   path: string;
 }): { title: string; text: string; url: string } {
   const url = buildShareUrl(options.path);
   const verdict = verdictSharePhrase(options.recommendation);
   const headline = options.headline.trim().replace(/[.!?…]+$/, "");
   const title = `${options.productTitle} — Forma says ${verdict}`;
-  const text = `Forma says ${verdict}: ${headline}. Lowest price ${options.lowestPrice} at ${options.retailer}.`;
+  const pricePhrase = options.priceEstimated
+    ? `Estimated price about ${options.lowestPrice}`
+    : `Lowest price ${options.lowestPrice}`;
+  const text = `Forma says ${verdict}: ${headline}. ${pricePhrase} at ${options.retailer}.`;
   return { title, text, url };
 }

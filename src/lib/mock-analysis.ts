@@ -114,7 +114,9 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
     { retailer: "Nordstrom", price: product.estimatedRetailPrice, url: "#", inStock: true, shipping: "Free" },
     { retailer: "Revolve", price: product.estimatedRetailPrice + 10, url: "#", inStock: false },
     { retailer: product.brand, price: product.estimatedRetailPrice - 15, url: "#", inStock: true, shipping: "Free over $150" },
-  ].sort((a, b) => a.price - b.price);
+  ]
+    .sort((a, b) => a.price - b.price)
+    .map((price) => ({ ...price, priceVerified: false, estimated: true }));
 
   const alternatives: ProductAnalysis["alternatives"] =
     scenario === "blazer"
@@ -228,6 +230,8 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
     ...alt,
     imageUrl: images.alternatives[i] ?? undefined,
     url: resolveAlternativeUrl(alt.url, alt.brand, alt.name),
+    priceVerified: false,
+    estimated: true,
   }));
 
   const resolvedSecondhand = {
@@ -239,6 +243,7 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
     ].map((platform) => ({
       ...platform,
       url: resolveSecondhandUrl(platform.url, platform.name, product.brand, product.name),
+      estimated: true,
     })),
   };
 
@@ -250,7 +255,7 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
       headline:
         scenario === "sneakers"
           ? "Great style, but you're paying a premium for the logo"
-          : "Solid investment piece — buy at the lowest price",
+          : "Solid piece — worth buying if the retailer price still looks right",
       reasoning:
         scenario === "sneakers"
           ? "Common Projects are iconic but the markup is significant. Similar Italian leather alternatives exist at 30% less with comparable quality."
@@ -328,20 +333,19 @@ export function generateMockAnalysis(query?: string): ProductAnalysis {
               { name: "Oversized linen shirt", category: "Top", reason: "Relaxed summer look", imageUrl: img("1566174053879-31528523f8ae") },
               { name: "Minimalist watch", category: "Accessories", reason: "Understated luxury", imageUrl: img("1469334031218-e382a71b716b") },
             ],
-    priceHistory: [
-      { date: "2025-10", price: product.estimatedRetailPrice + 20 },
-      { date: "2025-11", price: product.estimatedRetailPrice },
-      { date: "2025-12", price: product.estimatedRetailPrice - 10 },
-      { date: "2026-01", price: product.estimatedRetailPrice - 25 },
-      { date: "2026-02", price: product.estimatedRetailPrice - 15 },
-      { date: "2026-03", price: lowestWithImage.price },
-    ],
+    priceHistory: [],
+    priceTrend: {
+      direction: "stable",
+      summary: "This kind of item often holds its price between seasonal markdowns.",
+      typicalMarkdown: "15-25%",
+      estimated: true,
+    },
     salePrediction: {
       likelihood: "medium",
-      predictedDrop: "Late March — end of season sale",
+      predictedDrop: "Possibly near the end of the season",
       estimatedSalePrice: Math.round(product.estimatedRetailPrice * 0.75),
-      reasoning:
-        "Historical data shows this brand runs seasonal promotions. Current price is near recent lows — waiting 2-3 weeks could save 15-25%.",
+      reasoning: "Seasonal fashion sometimes discounts later in the season. This is a guess, not a scheduled sale.",
+      estimated: true,
     },
     stylingTips:
       scenario === "blazer"

@@ -121,6 +121,7 @@ describe("toSharedVerdict", () => {
     assert.equal(shared.product.imageUrl, "https://images.example.com/shoe.jpg");
     assert.equal(shared.product.matchPercent, 91);
     assert.equal(shared.lowestPrice.priceVerified, true);
+    assert.equal(shared.lowestPrice.estimated, false);
     assert.equal(shared.lowestPrice.url.includes("user_id"), false);
     assert.equal(shared.lowestPrice.url.includes("utm_source=shop"), true);
     assert.equal(shared.alternatives[0]?.url, "");
@@ -143,6 +144,11 @@ describe("toSharedVerdict", () => {
     assert.equal(JSON.stringify(shared).includes(analysis.id), false);
     assert.equal(shared.verdict.recommendation, analysis.verdict.recommendation);
     assert.ok(shared.lowestPrice.price > 0);
+    assert.equal(shared.lowestPrice.estimated, true);
+    assert.equal(shared.lowestPrice.priceVerified, false);
+    assert.equal(shared.prices.every((price) => price.estimated === true), true);
+    assert.equal(shared.secondhand.every((platform) => platform.estimated === true), true);
+    assert.match(sharedVerdictMetadataCopy(shared).description, /Estimated price about/);
     assert.ok(shared.alternatives.length > 0);
   });
 
@@ -201,6 +207,17 @@ describe("share ids and urls", () => {
     assert.match(payload.title, /CONSIDER DUPES/);
     assert.equal(payload.title.includes("CONSIDER-ALTERNATIVES"), false);
     assert.match(payload.text, /Lowest price \$80\.00 at Nike/);
+    const estimated = getVerdictSharePayload({
+      productTitle: "Nike Court",
+      recommendation: "wait",
+      headline: "Maybe later",
+      lowestPrice: "$80.00",
+      retailer: "Nike",
+      priceEstimated: true,
+      path: "/v/abcdefghij",
+    });
+    assert.match(estimated.text, /Estimated price about \$80\.00 at Nike/);
+    assert.equal(estimated.text.includes("Lowest price"), false);
   });
 
   it("writes preview metadata from the public verdict only", () => {

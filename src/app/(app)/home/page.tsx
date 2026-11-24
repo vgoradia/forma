@@ -7,6 +7,8 @@ import { Camera, ChevronRight, BadgeCheck } from "lucide-react";
 import { getRecentScanRows } from "@/lib/scan-helpers";
 import { saveScan, useLastScan, useScans } from "@/lib/storage";
 import { formatPrice, formatProductTitle } from "@/lib/utils";
+import { isEstimatedPrice } from "@/lib/price-estimates";
+import { EstimateBadge } from "@/components/estimate-badge";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
 import { FormaPlusBanner } from "@/components/forma-plus-cta";
@@ -126,9 +128,10 @@ export default function AppHomePage() {
                 {lastScan.analysis.verdict.headline}
               </p>
               <p className="mt-2 text-sm text-gray-700 lg:text-base">
-                Lowest:{" "}
+                {isEstimatedPrice(lowest) ? "Estimated: about " : "Lowest: "}
                 <span className="font-bold text-emerald-600">{formatPrice(lowest.price)}</span> at{" "}
                 {lowest.retailer}
+                {isEstimatedPrice(lowest) ? <EstimateBadge /> : " (verified)"}
               </p>
             </div>
           </div>

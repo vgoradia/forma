@@ -37,8 +37,9 @@ export default function TermsPage() {
             <h2 className="text-base font-semibold text-gray-900">The service</h2>
             <p>
               Forma provides AI-assisted shopping analysis (prices, dupes, buy/wait/skip verdicts). Results are for
-              informational purposes only — not financial, legal, or professional advice. Always verify prices and
-              retailers before purchasing.
+              informational purposes only — not financial, legal, or professional advice. Prices, price trends, and
+              sale timing that are not marked verified are AI estimates. They are not observed price history and not a
+              promise that a retailer will discount an item. Always verify prices and retailers before purchasing.
             </p>
           </section>
 

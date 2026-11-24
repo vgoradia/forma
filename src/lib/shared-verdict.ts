@@ -22,6 +22,8 @@ export interface SharedPrice {
   retailer: string;
   price: number;
   url: string;
+  /** False only when a live listing confirmed the figure. */
+  estimated: boolean;
 }
 
 export interface SharedAlternative {
@@ -33,6 +35,7 @@ export interface SharedAlternative {
   reason: string;
   tier: Tier;
   matchScore: number;
+  estimated: boolean;
 }
 
 export interface SharedVerdict {
@@ -63,7 +66,7 @@ export interface SharedVerdict {
     qualityScore: number;
     valueScore: number;
   };
-  secondhand: Array<{ name: string; price: number; url: string }>;
+  secondhand: Array<{ name: string; price: number; url: string; estimated: boolean }>;
   saleNote?: string;
 }
 
@@ -123,7 +126,11 @@ export function sharedVerdictMetadataCopy(verdict: SharedVerdict): { title: stri
   const title = `${shortName} — Forma says ${phrase}`;
   const price = formatPrice(verdict.lowestPrice.price);
   const headline = verdict.verdict.headline.trim().replace(/[.!?…]+$/, "");
-  const description = clip(`${headline}. Lowest price ${price} at ${verdict.lowestPrice.retailer}.`, 200);
+  const pricePhrase =
+    verdict.lowestPrice.priceVerified && !verdict.lowestPrice.estimated
+      ? `Lowest price ${price}`
+      : `Estimated price about ${price}`;
+  const description = clip(`${headline}. ${pricePhrase} at ${verdict.lowestPrice.retailer}.`, 200);
   return { title, description };
 }
 
@@ -193,6 +200,7 @@ export function toSharedVerdict(
 
   const lowest = readPriceRow(input.lowestPrice, isHostBlocked);
   if (!lowest) return null;
+  const lowestVerified = isRecord(input.lowestPrice) && input.lowestPrice.priceVerified === true;
 
   const prices = readPriceList(input.prices, isHostBlocked);
   const priceRows = prices.length > 0 ? prices : [lowest];
@@ -230,7 +238,8 @@ export function toSharedVerdict(
     },
     lowestPrice: {
       ...lowest,
-      priceVerified: isRecord(input.lowestPrice) && input.lowestPrice.priceVerified === true,
+      priceVerified: lowestVerified,
+      estimated: lowestVerified ? false : lowest.estimated,
     },
     prices: priceRows.slice(0, 4),
     alternatives: readAlternatives(input.alternatives, isHostBlocked),
@@ -326,12 +335,22 @@ function readPriceList(value: unknown, isHostBlocked: HostBlocker): SharedPrice[
     .slice(0, 4);
 }
 
+function readEstimated(row: Record<string, unknown>): boolean {
+  if (row.priceVerified === true || row.estimated === false) return false;
+  return true;
+}
+
 function readPriceRow(value: unknown, isHostBlocked: HostBlocker): SharedPrice | null {
   if (!isRecord(value)) return null;
   const retailer = scrubText(value.retailer, 80);
   const price = coercePrice(value.price);
   if (!retailer || price === undefined) return null;
-  return { retailer, price, url: sanitizePublicUrl(value.url, isHostBlocked) };
+  return {
+    retailer,
+    price,
+    url: sanitizePublicUrl(value.url, isHostBlocked),
+    estimated: readEstimated(value),
+  };
 }
 
 function readAlternatives(value: unknown, isHostBlocked: HostBlocker): SharedAlternative[] {
@@ -354,6 +373,7 @@ function readAlternatives(value: unknown, isHostBlocked: HostBlocker): SharedAlt
       reason: scrubText(item.reason, 200),
       tier,
       matchScore: clampScore(item.matchScore),
+      estimated: readEstimated(item),
     });
     if (alternatives.length >= 4) break;
   }
@@ -372,7 +392,12 @@ function readSecondhand(value: unknown, isHostBlocked: HostBlocker): SharedVerdi
     const name = scrubText(platform.name, 80);
     const price = coercePrice(platform.price);
     if (!name || price === undefined) continue;
-    items.push({ name, price, url: sanitizePublicUrl(platform.url, isHostBlocked) });
+    items.push({
+      name,
+      price,
+      url: sanitizePublicUrl(platform.url, isHostBlocked),
+      estimated: true,
+    });
     if (items.length >= 3) break;
   }
   return items;

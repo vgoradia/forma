@@ -24,16 +24,23 @@ import { GUEST_INITIALS } from "@/lib/user";
 import { ScoreRing } from "@/components/analysis/score-ring";
 import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
-import { isBookmarked, toggleBookmark } from "@/lib/storage";
+import { describePriceTrend, isEstimatedPrice, PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
+import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
+import { getPrefs, isBookmarked, toggleBookmark } from "@/lib/storage";
+import { subscribeStorage } from "@/lib/storage-events";
 import { trackEvent } from "@/lib/analytics";
 import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
 import { requestPublicShare } from "@/lib/shared-verdict";
 import { getVerdictSharePayload } from "@/lib/share-url";
 
-function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
+function Card({ title, children, className }: { title?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <section className={cn("rounded-2xl border border-forma-border bg-white p-4 shadow-sm lg:p-5", className)}>
-      {title && <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">{title}</h2>}
+      {title && (
+        <h2 className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-900 lg:text-base">
+          {title}
+        </h2>
+      )}
       {children}
     </section>
   );
@@ -61,6 +68,13 @@ export function AnalysisDetail({
   const heroImage = getAnalysisHeroImage(analysis, imagePreview);
   const [saved, setSaved] = useState(() => (scanId ? isBookmarked(scanId) : false));
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [showSaleEstimate, setShowSaleEstimate] = useState(true);
+
+  useEffect(() => {
+    const read = () => setShowSaleEstimate(getPrefs().salePredictions);
+    read();
+    return subscribeStorage(read);
+  }, []);
   const [sharing, setSharing] = useState(false);
   const publishedPath = useRef<string | null>(null);
 
@@ -120,6 +134,7 @@ export function AnalysisDetail({
         headline: analysis.verdict.headline,
         lowestPrice: formatPrice(analysis.lowestPrice.price),
         retailer: analysis.lowestPrice.retailer,
+        priceEstimated: isEstimatedPrice(analysis.lowestPrice),
         path,
       });
 
@@ -144,12 +159,9 @@ export function AnalysisDetail({
     }
   };
 
-  const savingsPercent =
-    analysis.secondhand.available && analysis.secondhand.platforms[0]
-      ? Math.round(
-          (1 - analysis.secondhand.platforms[0].price / product.estimatedRetailPrice) * 100
-        )
-      : 0;
+  const lowestEstimated = isEstimatedPrice(analysis.lowestPrice);
+  const anyPriceEstimated = lowestEstimated || analysis.prices.some((price) => isEstimatedPrice(price));
+  const priceTrend = describePriceTrend(analysis);
 
   return (
     <PageContainer className="pb-28 lg:pb-6">
@@ -204,11 +216,12 @@ export function AnalysisDetail({
           </p>
           <p className="mt-3 text-sm leading-relaxed text-gray-600 lg:text-base">{product.description}</p>
           <p className="mt-3 text-sm text-gray-700 lg:text-base">
-            Lowest price found:{" "}
+            {lowestEstimated ? "Estimated price: about " : "Lowest price found: "}
             <span className="font-bold text-emerald-600">{formatPrice(analysis.lowestPrice.price)}</span> at{" "}
             {analysis.lowestPrice.retailer}
-            {analysis.lowestPrice.priceVerified ? " (verified)" : ""}
+            {lowestEstimated ? <EstimateBadge /> : " (verified)"}
           </p>
+          {lowestEstimated && <EstimateFootnote>{PRICE_ESTIMATE_NOTE}</EstimateFootnote>}
           <p className="mt-2 text-xs text-forma-muted lg:text-sm">
             {analysis.prices.length} retailers compared • {analysis.alternatives.length} better alternatives found
           </p>
@@ -279,19 +292,39 @@ export function AnalysisDetail({
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:mb-6 lg:gap-4">
-        <Card title="Lowest price">
+        <Card
+          title={
+            anyPriceEstimated ? (
+              <>
+                Estimated prices
+                <EstimateBadge />
+              </>
+            ) : (
+              "Lowest price"
+            )
+          }
+        >
           <div className="space-y-2">
-            {analysis.prices.slice(0, 4).map((p, i) => (
-              <div key={`${p.retailer}-${i}`} className="flex items-center justify-between text-xs lg:text-sm">
-                <span className={cn("font-medium", i === 0 ? "text-gray-900" : "text-forma-muted")}>
-                  {p.retailer}
-                </span>
-                <span className={cn("font-semibold", i === 0 ? "text-emerald-600" : "text-gray-700")}>
-                  {formatPrice(p.price)}
-                </span>
-              </div>
-            ))}
+            {analysis.prices.slice(0, 4).map((p, i) => {
+              const estimated = isEstimatedPrice(p);
+              return (
+                <div key={`${p.retailer}-${i}`} className="flex items-center justify-between text-xs lg:text-sm">
+                  <span className={cn("font-medium", i === 0 ? "text-gray-900" : "text-forma-muted")}>
+                    {p.retailer}
+                  </span>
+                  <span className={cn("font-semibold", i === 0 ? "text-emerald-600" : "text-gray-700")}>
+                    {estimated ? `about ${formatPrice(p.price)}` : formatPrice(p.price)}
+                    {!estimated && (
+                      <span className="ml-1 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                        verified
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
+          {anyPriceEstimated && <EstimateFootnote>{PRICE_ESTIMATE_NOTE}</EstimateFootnote>}
           <ProductLink
             href={analysis.lowestPrice.url}
             className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-forma-primary py-2.5 text-xs font-semibold text-white lg:text-sm"
@@ -332,7 +365,17 @@ export function AnalysisDetail({
       </div>
 
       <section className="mb-4 lg:mb-6">
-        <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Better alternatives</h2>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold text-gray-900 lg:text-base">Better alternatives</h2>
+          {analysis.alternatives.some((alt) => isEstimatedPrice(alt)) && (
+            <EstimateBadge note="Dupe prices are AI estimates unless a live listing verified them." />
+          )}
+        </div>
+        {analysis.alternatives.some((alt) => isEstimatedPrice(alt)) && (
+          <p className="mb-3 text-[11px] leading-relaxed text-forma-muted lg:text-xs">
+            Dupe prices are AI estimates unless a live listing verified them.
+          </p>
+        )}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible xl:grid-cols-4">
           {analysis.alternatives.map((alt) => {
             const altTitle = formatProductTitle(alt.brand, alt.name);
@@ -352,7 +395,9 @@ export function AnalysisDetail({
               <p className="line-clamp-2 text-xs font-semibold text-gray-900 lg:text-sm">
                 {altTitle}
               </p>
-              <p className="mt-1 text-sm font-bold text-gray-900">{formatPrice(alt.price)}</p>
+              <p className="mt-1 text-sm font-bold text-gray-900">
+                {isEstimatedPrice(alt) ? `about ${formatPrice(alt.price)}` : formatPrice(alt.price)}
+              </p>
               <p className="mt-1 line-clamp-2 text-[10px] text-forma-muted lg:text-xs">{alt.reason}</p>
               <ProductLink
                 href={alt.url}
@@ -368,12 +413,17 @@ export function AnalysisDetail({
 
       {analysis.secondhand.available && analysis.secondhand.platforms.length > 0 && (
         <section className="mb-4 lg:mb-6">
-          <Card title="Buy secondhand">
+          <Card
+            title={
+              <>
+                Buy secondhand
+                <EstimateBadge note="Pre-owned prices are AI estimates, not live listings." />
+              </>
+            }
+          >
             <div className="mb-3 flex items-center gap-2 text-xs text-emerald-700 lg:text-sm">
               <Recycle className="h-4 w-4" />
-              {savingsPercent > 0
-                ? `Save up to ${savingsPercent}% buying pre-owned`
-                : "Pre-owned options available"}
+              Pre-owned prices are AI estimates, not live listings.
             </div>
             <div className="space-y-2">
               {analysis.secondhand.platforms.map((platform) => (
@@ -386,7 +436,7 @@ export function AnalysisDetail({
                     href={platform.url}
                     className="inline-flex items-center gap-1 text-sm font-semibold text-forma-primary"
                   >
-                    {formatPrice(platform.price)}
+                    about {formatPrice(platform.price)}
                     <ExternalLink className="h-3.5 w-3.5" />
                   </ProductLink>
                 </div>
@@ -429,21 +479,22 @@ export function AnalysisDetail({
       )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:mb-6 lg:gap-4">
-        <Card title="Price history">
-          <div className="space-y-2">
-            {analysis.priceHistory.slice(-3).map((point, i, arr) => (
-              <div key={point.date} className="flex items-center justify-between text-[11px] lg:text-sm">
-                <span className="text-forma-muted">{i === arr.length - 1 ? "Today" : point.date}</span>
-                <span className="font-semibold text-gray-900">{formatPrice(point.price)}</span>
-              </div>
-            ))}
-          </div>
-          {analysis.salePrediction?.likelihood !== "low" && (
-            <p className="mt-3 text-[10px] font-medium text-amber-600 lg:text-xs">
-              Expected sale in {analysis.salePrediction?.predictedDrop ?? "the next few weeks"}
-            </p>
-          )}
-        </Card>
+        {showSaleEstimate && (
+          <Card
+            title={
+              <>
+                Estimated price trend
+                <EstimateBadge note={PRICE_TREND_NOTE} />
+              </>
+            }
+          >
+            <p className="text-sm leading-relaxed text-gray-800">{priceTrend.summary}</p>
+            {priceTrend.saleLine && (
+              <p className="mt-2 text-xs leading-relaxed text-amber-800 lg:text-sm">{priceTrend.saleLine}</p>
+            )}
+            <EstimateFootnote>{priceTrend.footnote}</EstimateFootnote>
+          </Card>
+        )}
 
         <Card title="Wardrobe compatibility">
           <p className="mb-2 text-xs font-semibold text-emerald-600 lg:text-sm">

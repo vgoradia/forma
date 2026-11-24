@@ -4,7 +4,10 @@ export interface RetailerPrice {
   url: string;
   inStock: boolean;
   shipping?: string;
+  /** True only when a live retailer listing supplied this price. */
   priceVerified?: boolean;
+  /** True when the figure was not confirmed against a live listing. */
+  estimated?: boolean;
   listingTitle?: string;
   imageUrl?: string;
 }
@@ -18,6 +21,8 @@ export interface Alternative {
   matchScore: number;
   reason: string;
   tier: "premium" | "similar" | "dupe";
+  priceVerified?: boolean;
+  estimated?: boolean;
 }
 
 export interface OutfitItem {
@@ -30,6 +35,27 @@ export interface OutfitItem {
 export interface PriceHistoryPoint {
   date: string;
   price: number;
+  /** Synthetic point. Forma does not store observed price history. */
+  estimated: boolean;
+}
+
+export type PriceTrendDirection = "falling" | "stable" | "rising" | "unknown";
+
+/** Qualitative AI guess. Not a chart of observed prices. */
+export interface PriceTrendEstimate {
+  direction: PriceTrendDirection;
+  summary: string;
+  typicalMarkdown?: string;
+  estimated: true;
+}
+
+export interface SalePrediction {
+  likelihood: "high" | "medium" | "low";
+  predictedDrop: string;
+  estimatedSalePrice: number;
+  reasoning: string;
+  /** Always an AI guess. Forma does not observe sale calendars. */
+  estimated: true;
 }
 
 export interface ReviewSummary {
@@ -75,17 +101,13 @@ export interface ProductAnalysis {
   reviewSummary: ReviewSummary;
   outfitSuggestions: OutfitItem[];
   priceHistory: PriceHistoryPoint[];
-  salePrediction: {
-    likelihood: "high" | "medium" | "low";
-    predictedDrop: string;
-    estimatedSalePrice: number;
-    reasoning: string;
-  };
+  priceTrend?: PriceTrendEstimate;
+  salePrediction: SalePrediction;
   stylingTips: string[];
   wardrobeMatches: WardrobeMatch[];
   secondhand: {
     available: boolean;
-    platforms: { name: string; price: number; url: string }[];
+    platforms: { name: string; price: number; url: string; estimated?: boolean }[];
   };
   matchedListingTitle?: string;
   pricesVerified?: boolean;
