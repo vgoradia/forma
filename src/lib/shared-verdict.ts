@@ -1,6 +1,8 @@
-import { isBlockedHostname } from "./security";
 import type { ProductAnalysis } from "./types";
 import { coercePrice, formatPrice, formatProductTitle } from "./utils";
+
+/** Hostname check used while sanitizing a public URL. The server passes `isBlockedHostname`. */
+export type HostBlocker = (hostname: string) => boolean;
 
 /** Public share ids are 10 url-safe characters. The DB check constraint matches this. */
 export const SHARE_ID_PATTERN = /^[A-Za-z0-9]{10}$/;
@@ -125,8 +127,53 @@ export function sharedVerdictMetadataCopy(verdict: SharedVerdict): { title: stri
   return { title, description };
 }
 
+/**
+ * Browser-safe prefilter so the share button does not import Node's `net` module.
+ * Persisted snapshots are sanitized again with `isBlockedHostname`.
+ */
+export function basicBlockedHostname(hostname: string): boolean {
+  let host = hostname.trim().toLowerCase();
+  if (host.endsWith(".")) host = host.slice(0, -1);
+  if (host.startsWith("[") && host.endsWith("]")) host = host.slice(1, -1);
+  const zone = host.indexOf("%");
+  if (zone !== -1) host = host.slice(0, zone);
+  if (!host) return true;
+
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host === "metadata.google.internal" ||
+    host === "metadata.goog" ||
+    host === "metadata" ||
+    host === "instance-data" ||
+    host === "::1" ||
+    host.startsWith("fe80:") ||
+    host.startsWith("fc") ||
+    host.startsWith("fd")
+  ) {
+    return true;
+  }
+
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!match) return false;
+  const octets = match.slice(1).map(Number);
+  if (octets.some((octet) => octet > 255)) return true;
+  const [a, b] = octets;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  return false;
+}
+
 /** Whitelist a scan into the public snapshot. Extra fields, account ids, and screenshots are dropped. */
-export function toSharedVerdict(input: unknown): SharedVerdict | null {
+export function toSharedVerdict(
+  input: unknown,
+  isHostBlocked: HostBlocker = basicBlockedHostname
+): SharedVerdict | null {
   if (!isRecord(input)) return null;
 
   const productRecord = isRecord(input.product)
@@ -144,15 +191,15 @@ export function toSharedVerdict(input: unknown): SharedVerdict | null {
   const brand = scrubText(productRecord.brand, 80);
   if (!name && !brand) return null;
 
-  const lowest = readPriceRow(input.lowestPrice);
+  const lowest = readPriceRow(input.lowestPrice, isHostBlocked);
   if (!lowest) return null;
 
-  const prices = readPriceList(input.prices);
+  const prices = readPriceList(input.prices, isHostBlocked);
   const priceRows = prices.length > 0 ? prices : [lowest];
 
   const imageUrl =
-    sanitizePublicUrl(productRecord.imageUrl) ||
-    sanitizePublicUrl(isRecord(input.lowestPrice) ? input.lowestPrice.imageUrl : undefined) ||
+    sanitizePublicUrl(productRecord.imageUrl, isHostBlocked) ||
+    sanitizePublicUrl(isRecord(input.lowestPrice) ? input.lowestPrice.imageUrl : undefined, isHostBlocked) ||
     "";
 
   const reviewsRecord = isRecord(input.reviews)
@@ -186,7 +233,7 @@ export function toSharedVerdict(input: unknown): SharedVerdict | null {
       priceVerified: isRecord(input.lowestPrice) && input.lowestPrice.priceVerified === true,
     },
     prices: priceRows.slice(0, 4),
-    alternatives: readAlternatives(input.alternatives),
+    alternatives: readAlternatives(input.alternatives, isHostBlocked),
     reviews: {
       overallRating: clampRating(reviewsRecord.overallRating),
       totalReviews: clampCount(reviewsRecord.totalReviews),
@@ -196,7 +243,7 @@ export function toSharedVerdict(input: unknown): SharedVerdict | null {
       qualityScore: clampScore(reviewsRecord.qualityScore),
       valueScore: clampScore(reviewsRecord.valueScore),
     },
-    secondhand: readSecondhand(input.secondhand),
+    secondhand: readSecondhand(input.secondhand, isHostBlocked),
     ...(saleNote ? { saleNote } : {}),
   };
 
@@ -229,7 +276,7 @@ export async function requestPublicShare(analysis: unknown): Promise<string | nu
   }
 }
 
-export function sanitizePublicUrl(value: unknown): string {
+export function sanitizePublicUrl(value: unknown, isHostBlocked: HostBlocker = basicBlockedHostname): string {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > 2000) return "";
@@ -244,7 +291,7 @@ export function sanitizePublicUrl(value: unknown): string {
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return "";
   if (url.username || url.password) return "";
-  if (isBlockedHostname(url.hostname)) return "";
+  if (isHostBlocked(url.hostname)) return "";
 
   for (const key of [...url.searchParams.keys()]) {
     if (PII_QUERY_KEY.test(key)) url.searchParams.delete(key);
@@ -271,20 +318,23 @@ function readMatchPercent(product: Record<string, unknown>): number {
   return clampScore(confidence);
 }
 
-function readPriceList(value: unknown): SharedPrice[] {
+function readPriceList(value: unknown, isHostBlocked: HostBlocker): SharedPrice[] {
   if (!Array.isArray(value)) return [];
-  return value.map(readPriceRow).filter((price): price is SharedPrice => price !== null).slice(0, 4);
+  return value
+    .map((item) => readPriceRow(item, isHostBlocked))
+    .filter((price): price is SharedPrice => price !== null)
+    .slice(0, 4);
 }
 
-function readPriceRow(value: unknown): SharedPrice | null {
+function readPriceRow(value: unknown, isHostBlocked: HostBlocker): SharedPrice | null {
   if (!isRecord(value)) return null;
   const retailer = scrubText(value.retailer, 80);
   const price = coercePrice(value.price);
   if (!retailer || price === undefined) return null;
-  return { retailer, price, url: sanitizePublicUrl(value.url) };
+  return { retailer, price, url: sanitizePublicUrl(value.url, isHostBlocked) };
 }
 
-function readAlternatives(value: unknown): SharedAlternative[] {
+function readAlternatives(value: unknown, isHostBlocked: HostBlocker): SharedAlternative[] {
   if (!Array.isArray(value)) return [];
   const alternatives: SharedAlternative[] = [];
   for (const item of value) {
@@ -293,13 +343,13 @@ function readAlternatives(value: unknown): SharedAlternative[] {
     const brand = scrubText(item.brand, 80);
     const price = coercePrice(item.price);
     if ((!name && !brand) || price === undefined) continue;
-    const imageUrl = sanitizePublicUrl(item.imageUrl);
+    const imageUrl = sanitizePublicUrl(item.imageUrl, isHostBlocked);
     const tier = isTier(item.tier) ? item.tier : "similar";
     alternatives.push({
       name,
       brand,
       price,
-      url: sanitizePublicUrl(item.url),
+      url: sanitizePublicUrl(item.url, isHostBlocked),
       ...(imageUrl ? { imageUrl } : {}),
       reason: scrubText(item.reason, 200),
       tier,
@@ -310,7 +360,7 @@ function readAlternatives(value: unknown): SharedAlternative[] {
   return alternatives;
 }
 
-function readSecondhand(value: unknown): SharedVerdict["secondhand"] {
+function readSecondhand(value: unknown, isHostBlocked: HostBlocker): SharedVerdict["secondhand"] {
   const platforms = Array.isArray(value)
     ? value
     : isRecord(value) && value.available !== false && Array.isArray(value.platforms)
@@ -322,7 +372,7 @@ function readSecondhand(value: unknown): SharedVerdict["secondhand"] {
     const name = scrubText(platform.name, 80);
     const price = coercePrice(platform.price);
     if (!name || price === undefined) continue;
-    items.push({ name, price, url: sanitizePublicUrl(platform.url) });
+    items.push({ name, price, url: sanitizePublicUrl(platform.url, isHostBlocked) });
     if (items.length >= 3) break;
   }
   return items;

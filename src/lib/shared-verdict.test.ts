@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { generateMockAnalysis } from "./mock-analysis";
+import { isBlockedHostname } from "./security";
 import { getVerdictSharePayload } from "./share-url";
 import {
   createShareId,
@@ -176,6 +177,12 @@ describe("share ids and urls", () => {
     const kept = sanitizePublicUrl("https://www.nike.com/t/shoe?token=secret&color=white");
     assert.equal(kept.includes("token="), false);
     assert.equal(kept.includes("color=white"), true);
+  });
+
+  it("stores urls only after the hardened host block list", () => {
+    assert.equal(sanitizePublicUrl("http://2130706433/latest", isBlockedHostname), "");
+    assert.equal(sanitizePublicUrl("http://169.254.169.254/latest/meta-data", isBlockedHostname), "");
+    assert.equal(toSharedVerdict(leakedAnalysis(), isBlockedHostname)?.lowestPrice.url.includes("user_id"), false);
   });
 
   it("builds share copy with a public path and UTM tags", () => {

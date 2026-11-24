@@ -3,6 +3,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { buildShareUrl } from "@/lib/share-url";
 import { insertSharedVerdict } from "@/lib/shared-verdict-store";
+import { isBlockedHostname } from "@/lib/security";
 import { sharedVerdictPath, toSharedVerdict } from "@/lib/shared-verdict";
 
 const MAX_BODY_CHARS = 100_000;
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     typeof body === "object" && body !== null && "analysis" in body
       ? (body as { analysis: unknown }).analysis
       : null;
-  const verdict = toSharedVerdict(analysis);
+  const verdict = toSharedVerdict(analysis, isBlockedHostname);
   if (!verdict) {
     return NextResponse.json({ error: "That verdict can't be shared" }, { status: 400 });
   }

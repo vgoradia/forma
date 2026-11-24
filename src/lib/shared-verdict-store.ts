@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { isBlockedHostname } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from "@/lib/supabase/config";
 import {
@@ -40,7 +41,7 @@ function rememberDevShare(id: string, verdict: SharedVerdict) {
  * so account fields never reach the table.
  */
 export async function insertSharedVerdict(verdict: SharedVerdict): Promise<string | null> {
-  const clean = toSharedVerdict(verdict);
+  const clean = toSharedVerdict(verdict, isBlockedHostname);
   if (!clean) return null;
 
   const memory = devMemoryStore();
@@ -86,7 +87,7 @@ async function loadSharedVerdict(id: string): Promise<SharedVerdict | null> {
     return null;
   }
 
-  return toSharedVerdict(parseRpcPayload(data));
+  return toSharedVerdict(parseRpcPayload(data), isBlockedHostname);
 }
 
 function parseRpcPayload(data: unknown): unknown {
