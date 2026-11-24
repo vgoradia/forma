@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { subscribeStorage } from "@/lib/storage-events";
 import { FREE_SCANS_PER_MONTH, getScanQuota } from "@/lib/scan-quota";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
@@ -17,7 +17,8 @@ export function ScanQuotaBanner({
   const { plan, loading } = useSubscriptionPlan();
   const [tick, setTick] = useState(0);
   useEffect(() => subscribeStorage(() => setTick((n) => n + 1)), []);
-  const quota = useMemo(() => getScanQuota(), [tick]);
+  void tick;
+  const quota = getScanQuota();
 
   if (loading || plan === "plus") return null;
 

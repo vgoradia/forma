@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { subscribeStorage } from "@/lib/storage-events";
 import Link from "next/link";
 import { Camera, ChevronRight, BadgeCheck } from "lucide-react";
@@ -31,7 +31,8 @@ export default function AppHomePage() {
   const { plan } = useSubscriptionPlan();
   const [quotaTick, setQuotaTick] = useState(0);
   useEffect(() => subscribeStorage(() => setQuotaTick((n) => n + 1)), []);
-  const quota = useMemo(() => getScanQuota(), [plan, quotaTick]);
+  void quotaTick;
+  const quota = getScanQuota();
 
   useEffect(() => {
     if (!lastScan) return;
