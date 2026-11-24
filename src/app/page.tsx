@@ -5,12 +5,9 @@ import { getAppUrl } from "@/lib/app-url";
 import {
   Camera,
   Tag,
-  Shirt,
+  Share2,
   Shield,
   ArrowRight,
-  Search,
-  TrendingDown,
-  Layers,
   CheckCircle2,
   Users,
   Zap,
@@ -22,40 +19,25 @@ const DEMO_IMAGE =
 const features = [
   {
     icon: Camera,
-    title: "Identify instantly",
-    description: "Find the exact product from a screenshot, Pinterest pin, TikTok clip, or product link.",
+    title: "Scan the find",
+    description: "Screenshot from TikTok, a Pinterest pin, or paste any product link.",
   },
   {
     icon: Tag,
-    title: "Compare confidently",
-    description: "See the lowest price, better alternatives, budget dupes, and price history in one place.",
+    title: "Get the verdict",
+    description: "Buy, wait, or skip — with lowest price, dupes, and review signal in one card.",
   },
   {
-    icon: Shirt,
-    title: "Style it better",
-    description: "Get outfit recommendations and wardrobe compatibility before you purchase.",
-  },
-  {
-    icon: Layers,
-    title: "Smarter alternatives",
-    description: "Discover premium upgrades, similar options, and budget-friendly dupes side by side.",
-  },
-  {
-    icon: Search,
-    title: "AI review summaries",
-    description: "Skip hundreds of reviews. Get pros, cons, quality scores, and a clear verdict.",
-  },
-  {
-    icon: TrendingDown,
-    title: "Sale predictions",
-    description: "Know when to buy and when to wait with price history and sale forecasting.",
+    icon: Share2,
+    title: "Share the call",
+    description: "Send your verdict to friends before anyone impulse-buys.",
   },
 ];
 
 const steps = [
-  { step: "1", title: "Upload", description: "Screenshot, image, or product link" },
-  { step: "2", title: "Compare", description: "Retailers, reviews, and alternatives" },
-  { step: "3", title: "Decide", description: "Buy with confidence" },
+  { step: "1", title: "Scan", description: "Screenshot, link, or quick description" },
+  { step: "2", title: "Verdict", description: "Buy · Wait · Skip with prices & dupes" },
+  { step: "3", title: "Act", description: "Buy the dupe, wait for a drop, or move on" },
 ];
 
 const proof = [
@@ -72,7 +54,7 @@ export default function LandingPage() {
     name: "Forma",
     url: appUrl,
     description:
-      "AI shopping copilot that identifies products, compares prices, finds dupes, and delivers a buy/wait/skip verdict.",
+      "Buy-or-skip for viral fashion. Scan a find and get prices, dupes, and a buy / wait / skip verdict.",
     applicationCategory: "ShoppingApplication",
     operatingSystem: "Web",
     offers: {
@@ -94,8 +76,8 @@ export default function LandingPage() {
             <LogoWordmark size="md" priority />
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
-            <a href="#features" className="text-sm text-forma-muted hover:text-gray-900">
-              Features
+            <a href="#why-forma" className="text-sm text-forma-muted hover:text-gray-900">
+              Why Forma
             </a>
             <a href="#how-it-works" className="text-sm text-forma-muted hover:text-gray-900">
               How it works
@@ -121,7 +103,7 @@ export default function LandingPage() {
               href="/scan"
               className="rounded-xl bg-forma-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-forma-primary-dark"
             >
-              Get started free
+              Scan free
             </Link>
           </div>
         </div>
@@ -138,22 +120,22 @@ export default function LandingPage() {
               <div>
                 <p className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-indigo-100 bg-white py-1.5 pl-1.5 pr-3.5 text-sm text-indigo-700">
                   <LogoMark sizePx={28} className="!rounded-lg" priority />
-                  Free AI shopping copilot
+                  The buy-or-skip button for viral fashion
                 </p>
                 <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
                   Should you buy it?
-                  <span className="mt-2 block text-forma-primary">Forma knows.</span>
+                  <span className="mt-2 block text-forma-primary">Forma decides.</span>
                 </h1>
                 <p className="mt-6 max-w-xl text-lg leading-relaxed text-forma-muted">
-                  Paste a TikTok screenshot, Pinterest pin, or product link. Get the lowest price,
-                  better dupes, review summary, and a clear buy/wait/skip verdict in seconds.
+                  Before you checkout on impulse — scan the screenshot. One verdict: buy, wait, or skip.
+                  Prices, dupes, and why, in under 20 seconds.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <Link
                     href="/scan"
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-forma-primary px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-forma-primary-dark"
                   >
-                    Try free — scan now
+                    Get my verdict
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
@@ -226,7 +208,7 @@ export default function LandingPage() {
         <section id="how-it-works" className="border-y border-forma-border bg-white px-5 py-16 sm:px-8 sm:py-20">
           <div className="mx-auto max-w-6xl text-center">
             <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">How Forma works</h2>
-            <p className="mt-3 text-forma-muted">Three steps to a smarter purchase</p>
+            <p className="mt-3 text-forma-muted">Three steps. One decision.</p>
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {steps.map((s) => (
                 <div key={s.step} className="flex flex-col items-center">
@@ -241,17 +223,17 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="px-5 py-16 sm:px-8 sm:py-20">
+        <section id="why-forma" className="px-5 py-16 sm:px-8 sm:py-20">
           <div className="mx-auto max-w-6xl">
             <div className="mb-12 text-center">
               <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                Not just search. Full decision intelligence.
+                Lens finds it. Forma tells you if it&apos;s worth it.
               </h2>
               <p className="mt-3 text-forma-muted">
-                Google Lens finds it. Forma tells you if you should buy it — and what to get instead.
+                One job: stop expensive impulse buys from social feeds.
               </p>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-3">
               {features.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
@@ -270,17 +252,16 @@ export default function LandingPage() {
 
         <section className="px-5 pb-16 sm:px-8 sm:pb-24">
           <div className="mx-auto max-w-4xl rounded-3xl bg-forma-primary px-8 py-14 text-center text-white sm:px-12">
-            <h2 className="text-3xl font-bold sm:text-4xl">Stop overpaying. Start deciding smarter.</h2>
+            <h2 className="text-3xl font-bold sm:text-4xl">Buy with confidence — or skip with confidence.</h2>
             <p className="mx-auto mt-4 max-w-2xl text-indigo-100">
-              Join shoppers using Forma before every purchase. Free to try — upload a screenshot and
-              get your verdict in under 20 seconds.
+              Free every month. Scan a screenshot and share your verdict before anyone else checks out.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/scan"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-base font-semibold text-forma-primary transition hover:shadow-lg"
               >
-                Start scanning free
+                Scan my find
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

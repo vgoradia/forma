@@ -10,6 +10,9 @@ import { completeOnboarding, saveScan } from "@/lib/storage";
 import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
 import { trackEvent } from "@/lib/analytics";
+import { canStartScan, recordScanUsage } from "@/lib/scan-quota";
+import { ScanQuotaBanner } from "@/components/scan-quota-banner";
+import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 const LOADING_STEPS = [
   "Identifying product...",
@@ -27,6 +30,8 @@ export function ScanContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const { plan } = useSubscriptionPlan();
+  const isPlus = plan === "plus";
 
   useEffect(() => {
     completeOnboarding();
@@ -41,6 +46,11 @@ export function ScanContent() {
   }, [isLoading]);
 
   const handleAnalyze = async (formData: FormData, meta?: { imagePreview?: string }) => {
+    if (!canStartScan(isPlus)) {
+      setError("You've used all free scans this month. Upgrade to Forma Plus on Profile for unlimited verdicts.");
+      return;
+    }
+
     setIsLoading(true);
     setLoadingStep(0);
     setError(null);
@@ -93,6 +103,7 @@ export function ScanContent() {
         imagePreview: meta?.imagePreview,
       });
 
+      recordScanUsage(isPlus);
       trackEvent("scan_completed", { source, product: data.identifiedProduct.brand });
 
       router.push(`/analysis/${data.id}`);
@@ -115,14 +126,12 @@ export function ScanContent() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Scan</h1>
-          <p className="text-xs text-forma-muted">Upload, link, or describe a product</p>
+          <h1 className="text-xl font-bold text-gray-900">Get your verdict</h1>
+          <p className="text-xs text-forma-muted">Buy, wait, or skip — with prices and dupes</p>
         </div>
       </div>
 
-      <p className="mb-4 text-center text-xs text-forma-muted sm:text-sm">
-        Free to use · No signup required · Results in about 10–20 seconds
-      </p>
+      <ScanQuotaBanner className="mb-4" />
 
       <UploadZone
         onAnalyze={handleAnalyze}

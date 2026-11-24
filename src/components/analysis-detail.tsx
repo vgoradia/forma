@@ -26,11 +26,8 @@ import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
 import { isBookmarked, toggleBookmark } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
-import {
-  FormaPlusAnalysisUpsell,
-  FormaPlusMobileSticky,
-} from "@/components/forma-plus-cta";
-import { buildShareUrl } from "@/lib/share-url";
+import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
+import { getVerdictSharePayload } from "@/lib/share-url";
 
 function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
   return (
@@ -71,9 +68,14 @@ export function AnalysisDetail({
 
   const handleShare = async () => {
     const path = scanId ? `/analysis/${scanId}` : "/analysis/demo";
-    const url = buildShareUrl(path);
-    const title = `${productTitle} — Forma analysis`;
-    const text = `${analysis.verdict.headline} Lowest price: ${formatPrice(analysis.lowestPrice.price)} at ${analysis.lowestPrice.retailer}.`;
+    const { title, text, url } = getVerdictSharePayload({
+      productTitle,
+      recommendation: analysis.verdict.recommendation,
+      headline: analysis.verdict.headline,
+      lowestPrice: formatPrice(analysis.lowestPrice.price),
+      retailer: analysis.lowestPrice.retailer,
+      path,
+    });
 
     try {
       trackEvent("share_analysis", { has_scan_id: Boolean(scanId) });
@@ -82,7 +84,7 @@ export function AnalysisDetail({
         return;
       }
       await navigator.clipboard.writeText(`${text}\n${url}`);
-      setShareMessage("Link copied!");
+      setShareMessage("Verdict link copied!");
       setTimeout(() => setShareMessage(null), 2000);
     } catch {
       setShareMessage("Could not share");
@@ -166,6 +168,25 @@ export function AnalysisDetail({
         </div>
       </Card>
 
+      <div className="mb-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/90 to-violet-50/80 p-4 lg:mb-5 lg:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Your verdict</p>
+        <p className="mt-1 text-base font-semibold text-gray-900 lg:text-lg">{analysis.verdict.headline}</p>
+        <p className="mt-2 text-xs leading-relaxed text-forma-muted lg:text-sm line-clamp-3">
+          {analysis.verdict.reasoning}
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forma-primary py-3 text-sm font-semibold text-white lg:w-auto lg:px-6"
+        >
+          <Share2 className="h-4 w-4" />
+          Share verdict
+        </button>
+        {shareMessage && (
+          <p className="mt-2 text-center text-xs font-medium text-forma-primary lg:text-left">{shareMessage}</p>
+        )}
+      </div>
+
       <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
         <Link
           href="/scan?mode=upload"
@@ -197,14 +218,11 @@ export function AnalysisDetail({
         <button
           type="button"
           onClick={() => void handleShare()}
-          className="flex items-center justify-center gap-2 rounded-xl border border-forma-border bg-white py-3 text-xs font-semibold text-gray-700 lg:text-sm"
+          className="flex items-center justify-center gap-2 rounded-xl border border-forma-border bg-white py-3 text-xs font-semibold text-gray-700 lg:text-sm sm:hidden"
         >
           <Share2 className="h-4 w-4" /> Share
         </button>
       </div>
-      {shareMessage && (
-        <p className="mb-4 text-center text-xs font-medium text-forma-primary">{shareMessage}</p>
-      )}
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:mb-6 lg:gap-4">
         <Card title="Lowest price">
@@ -395,17 +413,7 @@ export function AnalysisDetail({
         </Card>
       </div>
 
-      <Card title="Verdict" className="mb-4 lg:mb-6">
-        <p className="text-sm font-semibold text-gray-900 lg:text-base">{analysis.verdict.headline}</p>
-        <p className="mt-2 text-xs leading-relaxed text-forma-muted lg:text-sm">{analysis.verdict.reasoning}</p>
-      </Card>
-
-      {scanId && (
-        <>
-          <FormaPlusAnalysisUpsell />
-          <FormaPlusMobileSticky />
-        </>
-      )}
+      {scanId && <FormaPlusAnalysisUpsell className="mt-6" />}
     </PageContainer>
   );
 }

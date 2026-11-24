@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Camera, Shirt, Bell, User } from "lucide-react";
+import { Home, Camera, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoWordmark } from "@/components/logo";
 import { UserAvatar } from "@/components/auth-ui";
@@ -14,8 +14,6 @@ import { useScans } from "@/lib/storage";
 const tabs = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/scan", label: "Scan", icon: Camera },
-  { href: "/wardrobe", label: "Wardrobe", icon: Shirt },
-  { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
@@ -79,7 +77,7 @@ export function AppNav() {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-forma-border bg-white lg:flex">
-        <Link href="/" className="border-b border-forma-border px-6 py-5" title="Forma home">
+        <Link href="/scan" className="border-b border-forma-border px-6 py-5" title="Scan with Forma">
           <LogoWordmark size="md" showTagline />
         </Link>
         <nav className="flex flex-1 flex-col gap-1 p-4">

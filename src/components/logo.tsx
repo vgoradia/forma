@@ -68,7 +68,7 @@ export function LogoWordmark({
       <div className="min-w-0">
         <p className={cn("font-bold leading-none text-gray-900", titleSizes[size])}>Forma</p>
         {showTagline ? (
-          <p className="mt-0.5 text-xs leading-snug text-forma-muted sm:text-sm">Shopping copilot</p>
+          <p className="mt-0.5 text-xs leading-snug text-forma-muted sm:text-sm">Buy or skip</p>
         ) : null}
       </div>
     </div>

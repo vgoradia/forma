@@ -15,6 +15,7 @@ import {
   Trash2,
   Sparkles,
   ChevronRight,
+  Bell,
 } from "lucide-react";
 import { Toggle } from "@/components/toggle";
 import {
@@ -137,14 +138,16 @@ export default function ProfilePage() {
 
   return (
     <PageContainer>
-      <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Settings</h1>
-      <p className="mt-1 text-sm text-forma-muted">Account and preferences for Forma</p>
+      <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Profile</h1>
+      <p className="mt-1 text-sm text-forma-muted">Forma Plus, alerts, and account</p>
 
       {status && (
         <p className="mt-4 rounded-xl bg-violet-50 px-4 py-3 text-sm text-violet-800">{status}</p>
       )}
 
-      {scans.length > 0 && <FormaPlusBanner variant="hero" className="mt-6" />}
+      {scans.length > 0 && (
+        <FormaPlusBanner variant="hero" className="mt-6" headline="Unlimited verdicts when you're hooked" />
+      )}
 
       {!profile.isAuthenticated && scans.length === 0 && (
         <div className="mt-6 rounded-2xl border border-dashed border-forma-border bg-white p-5 text-center">
@@ -206,6 +209,7 @@ export default function ProfilePage() {
             value={wardrobeCount > 0 ? `${wardrobeCount} items from scans` : "Scan to start"}
             href="/wardrobe"
           />
+          <SettingsRow icon={Bell} label="Price watches" value="Alerts & saved drops" href="/alerts" />
         </div>
       </section>
 

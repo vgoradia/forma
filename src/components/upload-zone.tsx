@@ -227,7 +227,7 @@ export function UploadZone({
             )}
           </span>
         ) : (
-          "Analyze with Forma"
+          "Get my verdict"
         )}
       </button>
     </div>

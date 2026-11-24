@@ -21,9 +21,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Forma — AI Shopping Copilot",
+  title: "Forma — Buy or skip before you checkout",
   description:
-    "Upload any screenshot, link, or image. Forma identifies the product, compares prices, finds alternatives, and tells you whether to buy.",
+    "The buy-or-skip button for viral fashion. Screenshot a find, get prices, dupes, and a clear buy / wait / skip verdict in seconds.",
   metadataBase: new URL(getAppUrl()),
   applicationName: "Forma",
   icons: {
@@ -34,10 +34,10 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "512x512" }],
     shortcut: [{ url: "/favicon.ico" }],
   },
-  keywords: ["AI shopping", "price comparison", "fashion", "product finder", "shopping copilot"],
+  keywords: ["buy or skip", "fashion dupes", "TikTok shopping", "price comparison", "Forma"],
   openGraph: {
-    title: "Forma — AI Shopping Copilot",
-    description: "Should you buy it? Forma knows. Prices, alternatives, and a clear verdict in seconds.",
+    title: "Forma — Buy or skip before you checkout",
+    description: "Screenshot viral fashion finds. Get prices, dupes, and a buy / wait / skip verdict.",
     type: "website",
     siteName: "Forma",
   },

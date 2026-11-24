@@ -8,7 +8,7 @@ import { coercePrice, stripDuplicateBrand } from "./utils";
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
-const SYSTEM_PROMPT = `You are Forma, an expert AI shopping copilot for fashion and lifestyle products.
+const SYSTEM_PROMPT = `You are Forma, an expert fashion shopping advisor that gives clear buy, wait, or skip verdicts.
 Analyze the input and return ONLY valid JSON (no markdown) matching this schema:
 {
   "identifiedProduct": { "name", "brand", "category", "description", "estimatedRetailPrice", "colors", "materials", "style", "confidence" },

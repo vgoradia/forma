@@ -20,6 +20,21 @@ export function buildShareUrl(path: string, origin?: string): string {
 export function getFormaShareCopy(url?: string): { text: string; url: string } {
   const shareUrl = url ?? buildShareUrl("/scan");
   const text =
-    "I use Forma before buying anything online — paste a screenshot or link and it finds the lowest price, dupes, and tells you buy/wait/skip. Free:";
+    "Forma is the buy-or-skip button for viral fashion — screenshot a find and get prices, dupes, and a clear verdict. Free:";
   return { text, url: shareUrl };
+}
+
+export function getVerdictSharePayload(options: {
+  productTitle: string;
+  recommendation: string;
+  headline: string;
+  lowestPrice: string;
+  retailer: string;
+  path: string;
+}): { title: string; text: string; url: string } {
+  const url = buildShareUrl(options.path);
+  const verdict = options.recommendation.toUpperCase();
+  const title = `${options.productTitle} — Forma says ${verdict}`;
+  const text = `Forma says ${verdict}: ${options.headline} Lowest price ${options.lowestPrice} at ${options.retailer}.`;
+  return { title, text, url };
 }
