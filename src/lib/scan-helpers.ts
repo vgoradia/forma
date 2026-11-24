@@ -71,20 +71,6 @@ export function getContinueSearching(scans: StoredScan[]) {
   }));
 }
 
-export function getPriceDropAlerts(scans: StoredScan[]) {
-  return scans
-    .filter((s) => s.analysis.salePrediction?.likelihood && s.analysis.salePrediction.likelihood !== "low")
-    .slice(0, 6)
-    .map((scan) => ({
-      id: scan.id,
-      name: getProductName(scan),
-      price: scan.analysis.lowestPrice?.price,
-      subtitle: `Expected sale ${scan.analysis.salePrediction?.predictedDrop?.toLowerCase() ?? "soon"}`,
-      imageUrl: getScanImage(scan),
-      href: `/analysis/${scan.id}`,
-    }));
-}
-
 export function getRecommendedFromScans(scans: StoredScan[]) {
   const items: {
     id: string;
@@ -168,17 +154,6 @@ export function getDemoContinueSearching() {
     subtitle: item.saved,
     imageUrl: item.imageUrl,
     href: "/scan",
-  }));
-}
-
-export function getDemoPriceDrops() {
-  return homeSections.priceDrops.map((item) => ({
-    id: item.id,
-    name: item.name,
-    subtitle: item.note,
-    price: item.price,
-    imageUrl: item.imageUrl,
-    href: "/analysis/demo",
   }));
 }
 

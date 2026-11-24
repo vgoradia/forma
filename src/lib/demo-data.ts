@@ -22,29 +22,6 @@ export const homeSections = {
       imageUrl: img("1591047139829-d91aecb6caea"),
     },
   ],
-  priceDrops: [
-    {
-      id: "1",
-      name: "Aritzia Wilfred Dress",
-      price: 148,
-      note: "Example alert",
-      imageUrl: img("1595777457583-95e059d581b8"),
-    },
-    {
-      id: "2",
-      name: "Madewell Transport Tote",
-      price: 98,
-      note: "Example alert",
-      imageUrl: img("1434389677669-e08b4cac3105"),
-    },
-    {
-      id: "3",
-      name: "Reformation Linen Set",
-      price: 128,
-      note: "Example alert",
-      imageUrl: img("1566174053879-31528523f8ae"),
-    },
-  ],
   recommended: [
     {
       id: "1",

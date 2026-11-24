@@ -5,29 +5,15 @@ import { generateMockAnalysis } from "./mock-analysis";
 import { enrichAnalysisLinks } from "./enrich-links";
 import { resolveProductUrl, resolveAlternativeUrl, resolveSecondhandUrl } from "./product-links";
 import { coercePrice, stripDuplicateBrand } from "./utils";
+import { ANALYSIS_SYSTEM_PROMPT } from "./analysis-prompt";
+import {
+  asUnverifiedEstimate,
+  flagModelPriceHistory,
+  flagModelSalePrediction,
+  normalizePriceTrend,
+} from "./price-estimates";
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
-
-const SYSTEM_PROMPT = `You are Forma, an expert fashion shopping advisor that gives clear buy, wait, or skip verdicts.
-Analyze the input and return ONLY valid JSON (no markdown) matching this schema:
-{
-  "identifiedProduct": { "name", "brand", "category", "description", "estimatedRetailPrice", "colors", "materials", "style", "confidence" },
-  "verdict": { "recommendation": "buy"|"wait"|"skip"|"consider-alternatives", "headline", "reasoning", "worthItScore" },
-  "prices": [{ "retailer", "price", "url", "inStock", "shipping?" }],
-  "alternatives": [{ "name", "brand", "price", "imageUrl": "", "url", "matchScore", "reason", "tier": "premium"|"similar"|"dupe" }],
-  "reviewSummary": { "overallRating", "totalReviews", "pros", "cons", "summary", "qualityScore", "valueScore" },
-  "outfitSuggestions": [{ "name", "category", "reason" }],
-  "priceHistory": [{ "date": "YYYY-MM", "price" }],
-  "salePrediction": { "likelihood": "high"|"medium"|"low", "predictedDrop", "estimatedSalePrice", "reasoning" },
-  "stylingTips": string[],
-  "wardrobeMatches": [{ "item", "compatibility": "high"|"medium"|"low", "note" }],
-  "secondhand": { "available", "platforms": [{ "name", "price", "url" }] }
-}
-Keep text concise. colors, materials, and style must be JSON arrays of strings. Include 3 alternatives and 3-4 prices.
-Put the brand in "brand" only — "name" must NOT repeat the brand (e.g. brand: "Nike", name: "Air Force 1 Low", not "Nike Air Force 1 Low").
-Be precise about product color in both "name" and "colors" (e.g. "Black Supima Cotton T-Shirt", colors: ["Black"]). Prices are approximate — live retailer prices replace them after analysis.
-For prices and alternatives, set "url" to an empty string — real product links are added automatically after analysis.
-Respond with a single JSON object only. No markdown, no code fences, no text before or after the JSON.`;
 
 function getApiKey(): string | undefined {
   return process.env.ANTHROPIC_API_KEY ?? process.env.OPENAI_API_KEY;
@@ -50,22 +36,24 @@ function normalizeAnalysis(
   const brand = raw.identifiedProduct?.brand ?? "";
   const name = stripDuplicateBrand(brand, raw.identifiedProduct?.name ?? "");
 
-  const prices = (Array.isArray(raw.prices) ? raw.prices : []).map((p) => ({
-    ...p,
-    price: coercePrice(p.price) ?? 0,
-    url: resolveProductUrl(p.url, p.retailer, brand, name),
-  }));
+  const prices = (Array.isArray(raw.prices) ? raw.prices : []).map((p) =>
+    asUnverifiedEstimate({
+      ...p,
+      price: coercePrice(p.price) ?? 0,
+      url: resolveProductUrl(p.url, p.retailer, brand, name),
+    })
+  );
 
   const alternatives = (Array.isArray(raw.alternatives) ? raw.alternatives : []).map((alt) => {
     const altBrand = alt.brand ?? "";
     const altName = stripDuplicateBrand(altBrand, alt.name ?? "");
-    return {
+    return asUnverifiedEstimate({
       ...alt,
       brand: altBrand,
       name: altName,
       price: coercePrice(alt.price) ?? 0,
       url: resolveAlternativeUrl(alt.url, altBrand, altName),
-    };
+    });
   });
 
   const platforms = (Array.isArray(raw.secondhand?.platforms) ? raw.secondhand.platforms : []).map(
@@ -73,6 +61,7 @@ function normalizeAnalysis(
       ...platform,
       price: coercePrice(platform.price) ?? 0,
       url: resolveSecondhandUrl(platform.url, platform.name, brand, name),
+      estimated: true as const,
     })
   );
 
@@ -100,21 +89,9 @@ function normalizeAnalysis(
       cons: toStringArray(raw.reviewSummary?.cons),
     },
     outfitSuggestions: Array.isArray(raw.outfitSuggestions) ? raw.outfitSuggestions : [],
-    priceHistory: (Array.isArray(raw.priceHistory) ? raw.priceHistory : []).map((point) => ({
-      ...point,
-      price: coercePrice(point.price) ?? 0,
-    })),
-    salePrediction: raw.salePrediction
-      ? {
-          ...raw.salePrediction,
-          estimatedSalePrice: coercePrice(raw.salePrediction.estimatedSalePrice) ?? 0,
-        }
-      : {
-          likelihood: "low" as const,
-          predictedDrop: "Unknown",
-          estimatedSalePrice: 0,
-          reasoning: "",
-        },
+    priceHistory: flagModelPriceHistory(raw.priceHistory, coercePrice),
+    priceTrend: normalizePriceTrend(raw.priceTrend),
+    salePrediction: flagModelSalePrediction(raw.salePrediction, coercePrice),
     stylingTips: toStringArray(raw.stylingTips),
     wardrobeMatches: Array.isArray(raw.wardrobeMatches) ? raw.wardrobeMatches : [],
     secondhand: {
@@ -198,12 +175,14 @@ function finalizeAnalysis(
     .filter((p) => coercePrice(p.price) !== undefined || p.price === 0)
     .sort((a, b) => (coercePrice(a.price) ?? Infinity) - (coercePrice(b.price) ?? Infinity));
   const lowestValid = prices.find((p) => coercePrice(p.price) !== undefined);
-  const lowestPrice = lowestValid ?? {
-    retailer: normalized.identifiedProduct.brand || "Unknown",
-    price: coercePrice(normalized.identifiedProduct.estimatedRetailPrice) ?? 0,
-    url: "#",
-    inStock: true,
-  };
+  const lowestPrice = asUnverifiedEstimate(
+    lowestValid ?? {
+      retailer: normalized.identifiedProduct.brand || "Unknown",
+      price: coercePrice(normalized.identifiedProduct.estimatedRetailPrice) ?? 0,
+      url: "#",
+      inStock: true,
+    }
+  );
 
   return {
     ...normalized,
@@ -240,7 +219,7 @@ async function analyzeWithAnthropic(input: AnalyzeInput, apiKey: string): Promis
       const response = await client.messages.create({
         model: ANTHROPIC_MODEL,
         max_tokens: 4096,
-        system: SYSTEM_PROMPT,
+        system: ANALYSIS_SYSTEM_PROMPT,
         messages: [{ role: "user", content }],
       });
 
@@ -281,7 +260,7 @@ async function analyzeWithOpenAI(input: AnalyzeInput, apiKey: string): Promise<P
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
       { role: "user", content: userContent },
     ],
     max_tokens: 2048,

@@ -73,7 +73,7 @@ export default function AboutPage() {
             <p className="text-sm leading-relaxed text-forma-muted">
               Discovery happens on social media. Decision-making happens across a dozen tabs — Google,
               Amazon, Reddit, retailer sites. No single tool tells you whether the purchase is actually
-              worth it, what the best alternative is, or when to wait for a sale.
+              worth it, or what a better alternative looks like.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function AboutPage() {
             </div>
             <ul className="space-y-2 text-sm text-forma-muted">
               <li>• Scan a screenshot, image, or product link</li>
-              <li>• Lowest price + budget dupes side by side</li>
+              <li>• Prices and budget dupes, labeled when they&apos;re estimates</li>
               <li>• Review signal without reading 200 comments</li>
               <li>• One verdict: Buy, Wait, or Skip</li>
               <li>• Share the verdict before your group chat checks out</li>

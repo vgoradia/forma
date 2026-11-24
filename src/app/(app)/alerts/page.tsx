@@ -1,130 +1,65 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, TrendingDown, Bookmark } from "lucide-react";
-import {
-  getDemoPriceDrops,
-  getPriceDropAlerts,
-  getProductName,
-  getSavedItems,
-  getScanImage,
-} from "@/lib/scan-helpers";
-import { getPrefs, useBookmarkIds, useScans } from "@/lib/storage";
-import { formatPrice } from "@/lib/utils";
+import { Bell } from "lucide-react";
 import { PageContainer } from "@/components/page-container";
-import { ProductImage } from "@/components/product-image";
+import { Toggle } from "@/components/toggle";
+import { getPrefs, savePrefs } from "@/lib/storage";
+import { subscribeStorage } from "@/lib/storage-events";
 
 export default function AlertsPage() {
-  const scans = useScans();
-  const bookmarkIds = useBookmarkIds();
-  const prefs = getPrefs();
+  const [notify, setNotify] = useState(false);
 
-  const saleAlerts = prefs.salePredictions ? getPriceDropAlerts(scans) : [];
-  const savedItems = getSavedItems(scans, bookmarkIds);
-  const demoFallback = getDemoPriceDrops();
-  const usingDemoAlerts = saleAlerts.length === 0;
-  const displayAlerts = saleAlerts.length > 0 ? saleAlerts : demoFallback;
-  const alertCount = saleAlerts.length + (prefs.savedItemReminders ? savedItems.length : 0);
+  useEffect(() => {
+    const read = () => setNotify(getPrefs().priceDropAlerts);
+    read();
+    return subscribeStorage(read);
+  }, []);
+
+  const setNotifyPref = (value: boolean) => {
+    const prefs = getPrefs();
+    savePrefs({ ...prefs, priceDropAlerts: value, priceDropPush: false });
+    setNotify(value);
+  };
 
   return (
     <PageContainer>
-      <p className="mb-4 rounded-2xl border border-forma-border bg-white px-4 py-3 text-xs text-forma-muted">
-        Save a verdict first — then watch prices here. Start with a{" "}
-        <Link href="/scan" className="font-semibold text-forma-primary">
-          new scan
-        </Link>
-        .
-      </p>
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Alerts</h1>
-        <p className="text-sm text-forma-muted lg:text-base">Price drops and sale predictions</p>
+        <h1 className="text-2xl font-bold text-gray-900 lg:text-3xl">Price alerts</h1>
+        <p className="text-sm text-forma-muted lg:text-base">Coming soon — nothing is watching prices yet</p>
       </div>
 
-      <div className="mb-6 flex items-center gap-3 rounded-2xl border border-forma-border bg-white p-4 lg:p-5">
+      <div className="rounded-2xl border border-forma-border bg-white p-5 lg:max-w-xl lg:p-6">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100">
           <Bell className="h-5 w-5 text-forma-primary" />
         </div>
-        <div>
-          <p className="font-semibold text-gray-900">
-            {alertCount > 0 ? `${alertCount} active alert${alertCount === 1 ? "" : "s"}` : "No active alerts yet"}
-          </p>
-          <p className="text-xs text-forma-muted lg:text-sm">Manage alerts in Settings</p>
+        <h2 className="mt-4 text-lg font-semibold text-gray-900">Price watches aren&apos;t live</h2>
+        <p className="mt-2 text-sm leading-relaxed text-forma-muted">
+          Forma does not track price drops or send sale alerts. A price on a verdict is either a verified
+          listing or an AI estimate — not a notification that a price changed.
+        </p>
+
+        <div className="mt-5 flex items-start justify-between gap-4 rounded-xl bg-gray-50 px-3 py-3">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Notify me when this launches</p>
+            <p className="mt-1 text-xs leading-relaxed text-forma-muted">
+              This only saves your interest on this device. No product is being watched, and no email is sent yet.
+            </p>
+          </div>
+          <Toggle checked={notify} onChange={setNotifyPref} />
         </div>
-        <Link href="/profile" className="ml-auto text-xs font-semibold text-forma-primary lg:text-sm">
-          Settings
+
+        {notify && (
+          <p className="mt-3 text-sm text-indigo-800">
+            You&apos;re on the list for a future launch. Nothing is being watched right now.
+          </p>
+        )}
+
+        <Link href="/scan" className="mt-5 inline-flex text-sm font-semibold text-forma-primary">
+          Scan a product instead
         </Link>
       </div>
-
-      {savedItems.length > 0 && prefs.savedItemReminders && (
-        <>
-          <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Saved items</h2>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {savedItems.map((scan) => (
-              <Link
-                key={scan.id}
-                href={`/analysis/${scan.id}`}
-                className="rounded-2xl border border-forma-border bg-white p-4 lg:p-5 transition hover:shadow-sm"
-              >
-                <div className="flex gap-4">
-                  <ProductImage
-                    src={getScanImage(scan)}
-                    alt={getProductName(scan)}
-                    fit="contain"
-                    className="h-20 w-16 shrink-0 rounded-xl bg-gray-50 lg:h-24 lg:w-20"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-1 text-xs text-violet-600">
-                      <Bookmark className="h-3 w-3" /> Saved
-                    </div>
-                    <p className="font-medium text-gray-900 lg:text-lg">{getProductName(scan)}</p>
-                    <p className="mt-1 text-lg font-bold text-emerald-600">
-                      {formatPrice(scan.analysis.lowestPrice.price)}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </>
-      )}
-
-      {usingDemoAlerts && scans.length === 0 && (
-        <p className="mb-3 text-center text-xs text-forma-muted">
-          Sample alerts — scan a product to get personalized predictions.
-        </p>
-      )}
-      <h2 className="mb-3 text-sm font-semibold text-gray-900 lg:text-base">Price drops to watch</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {displayAlerts.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            className="rounded-2xl border border-forma-border bg-white p-4 lg:p-5 transition hover:shadow-sm"
-          >
-            <div className="flex gap-4">
-              <ProductImage
-                src={item.imageUrl}
-                alt={item.name}
-                className="h-20 w-16 shrink-0 rounded-xl lg:h-24 lg:w-20"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900 lg:text-lg">{item.name}</p>
-                <p className="mt-1 text-lg font-bold text-emerald-600">{formatPrice(item.price)}</p>
-                <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 lg:text-sm">
-                  <TrendingDown className="h-3.5 w-3.5" />
-                  {item.subtitle}
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {scans.length === 0 && (
-        <p className="mt-6 text-center text-sm text-forma-muted">
-          Scan products to get personalized sale predictions here.
-        </p>
-      )}
     </PageContainer>
   );
 }

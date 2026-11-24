@@ -4,6 +4,7 @@ import {
   finalizeRetailerUrl,
   resolveSecondhandUrl,
 } from "./product-links";
+import { normalizePriceTrend, syncEstimateFlag } from "./price-estimates";
 import { stripDuplicateBrand } from "./utils";
 
 function hasObject(value: unknown): value is Record<string, unknown> {
@@ -54,11 +55,14 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
   const name = stripDuplicateBrand(brand, analysis.identifiedProduct.name);
 
   const lowestPrice = analysis.lowestPrice
-    ? {
+    ? syncEstimateFlag({
         ...analysis.lowestPrice,
         url: finalizeRetailerUrl(analysis.lowestPrice.url, analysis.lowestPrice.retailer, brand, name),
-      }
+      })
     : analysis.lowestPrice;
+
+  const priceTrend = normalizePriceTrend(analysis.priceTrend);
+  const prediction = analysis.salePrediction;
 
   return {
     ...analysis,
@@ -73,22 +77,24 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
     },
     lowestPrice,
     prices: Array.isArray(analysis.prices)
-      ? analysis.prices.map((price) => ({
-          ...price,
-          url: finalizeRetailerUrl(price.url, price.retailer, brand, name),
-        }))
+      ? analysis.prices.map((price) =>
+          syncEstimateFlag({
+            ...price,
+            url: finalizeRetailerUrl(price.url, price.retailer, brand, name),
+          })
+        )
       : [],
     alternatives: Array.isArray(analysis.alternatives)
       ? analysis.alternatives.map((alt) => {
           const altBrand = alt.brand;
           const altName = stripDuplicateBrand(altBrand, alt.name);
-          return {
+          return syncEstimateFlag({
             ...alt,
             brand: altBrand,
             name: altName,
             url: finalizeAlternativeUrl(alt.url, altBrand, altName),
             imageUrl: alt.imageUrl?.trim() || undefined,
-          };
+          });
         })
       : [],
     secondhand: analysis.secondhand
@@ -97,16 +103,26 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
           platforms: (analysis.secondhand.platforms ?? []).map((platform) => ({
             ...platform,
             url: resolveSecondhandUrl(platform.url, platform.name, brand, name),
+            estimated: true,
           })),
         }
       : { available: false, platforms: [] },
     wardrobeMatches: Array.isArray(analysis.wardrobeMatches) ? analysis.wardrobeMatches : [],
     outfitSuggestions: Array.isArray(analysis.outfitSuggestions) ? analysis.outfitSuggestions : [],
-    salePrediction: analysis.salePrediction ?? {
-      likelihood: "low",
-      predictedDrop: "Unknown",
-      estimatedSalePrice: analysis.lowestPrice?.price ?? 0,
-      reasoning: "",
+    priceHistory: Array.isArray(analysis.priceHistory)
+      ? analysis.priceHistory.map((point) => ({
+          date: point.date,
+          price: point.price,
+          estimated: true,
+        }))
+      : [],
+    ...(priceTrend ? { priceTrend } : {}),
+    salePrediction: {
+      likelihood: prediction?.likelihood ?? "low",
+      predictedDrop: prediction?.predictedDrop ?? "Unknown",
+      estimatedSalePrice: prediction?.estimatedSalePrice ?? analysis.lowestPrice?.price ?? 0,
+      reasoning: prediction?.reasoning ?? "",
+      estimated: true,
     },
   };
 }

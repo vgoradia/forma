@@ -25,6 +25,7 @@ import { RETAILER_DOMAINS } from "./product-links";
 import { resolveProductImageUrl, resolveQueryImageUrl } from "./resolve-image";
 import { coercePrice } from "./utils";
 import { safeAsync, withTimeout } from "./resilience";
+import { normalizePriceTrend, syncEstimateFlag } from "./price-estimates";
 
 const ENRICH_TIMEOUT_MS = 50_000;
 
@@ -380,9 +381,11 @@ function applyBaselineEnrichment(analysis: ProductAnalysis): ProductAnalysis {
   const brand = product.brand;
   const name = stripDuplicateBrand(brand, product.name);
 
+  const priceTrend = normalizePriceTrend(analysis.priceTrend);
+
   return {
     ...analysis,
-    lowestPrice: {
+    lowestPrice: syncEstimateFlag({
       ...analysis.lowestPrice,
       url: finalizeRetailerUrl(
         analysis.lowestPrice.url,
@@ -390,21 +393,38 @@ function applyBaselineEnrichment(analysis: ProductAnalysis): ProductAnalysis {
         brand,
         name
       ),
-    },
-    prices: (analysis.prices ?? []).map((priceRow) => ({
-      ...priceRow,
-      url: finalizeRetailerUrl(priceRow.url, priceRow.retailer, brand, name),
-    })),
-    alternatives: (analysis.alternatives ?? []).map((alt) => ({
-      ...alt,
-      url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
-    })),
+    }),
+    prices: (analysis.prices ?? []).map((priceRow) =>
+      syncEstimateFlag({
+        ...priceRow,
+        url: finalizeRetailerUrl(priceRow.url, priceRow.retailer, brand, name),
+      })
+    ),
+    alternatives: (analysis.alternatives ?? []).map((alt) =>
+      syncEstimateFlag({
+        ...alt,
+        url: finalizeAlternativeUrl(alt.url, alt.brand, alt.name),
+      })
+    ),
     secondhand: {
       available: analysis.secondhand?.available ?? false,
       platforms: (analysis.secondhand?.platforms ?? []).map((platform) => ({
         ...platform,
         url: buildSecondhandUrl(platform.name, brand, name),
+        estimated: true,
       })),
+    },
+    priceHistory: (analysis.priceHistory ?? []).map((point) => ({
+      ...point,
+      estimated: true,
+    })),
+    ...(priceTrend ? { priceTrend } : {}),
+    salePrediction: {
+      likelihood: analysis.salePrediction?.likelihood ?? "low",
+      predictedDrop: analysis.salePrediction?.predictedDrop ?? "Unknown",
+      estimatedSalePrice: analysis.salePrediction?.estimatedSalePrice ?? 0,
+      reasoning: analysis.salePrediction?.reasoning ?? "",
+      estimated: true,
     },
   };
 }

@@ -9,7 +9,7 @@ export default function NotFound() {
       </Link>
       <h1 className="text-2xl font-bold text-gray-900">Page not found</h1>
       <p className="mt-2 max-w-sm text-sm text-forma-muted">
-        That link may be outdated. Try a fresh scan or see the live demo.
+        That link may be outdated. Try a fresh scan or open a sample verdict.
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link
