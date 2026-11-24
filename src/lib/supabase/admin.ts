@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { UserPlan } from "@/lib/plan";
 import { getSupabaseUrl } from "@/lib/supabase/config";
 
 export function getSupabaseAdmin() {
@@ -10,13 +11,24 @@ export function getSupabaseAdmin() {
   });
 }
 
-export async function setUserPlan(userId: string, plan: "free" | "plus") {
+/**
+ * Persist the plan where the signed-in user cannot change it.
+ * GoTrue merges both metadata objects; a null user_metadata.plan deletes the
+ * legacy key that used to be client-writable.
+ */
+export async function setUserPlan(userId: string, plan: UserPlan) {
   const admin = getSupabaseAdmin();
   if (!admin) return false;
 
   const { error } = await admin.auth.admin.updateUserById(userId, {
-    user_metadata: { plan },
+    app_metadata: { plan },
+    user_metadata: { plan: null },
   });
 
-  return !error;
+  if (error) {
+    console.error("setUserPlan failed:", error.message);
+    return false;
+  }
+
+  return true;
 }

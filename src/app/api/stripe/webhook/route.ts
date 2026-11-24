@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { planForSubscriptionStatus } from "@/lib/plan";
 import { getStripeWebhookSecret, isStripeConfigured } from "@/lib/stripe/config";
 import { getStripe } from "@/lib/stripe/server";
 import { setUserPlan } from "@/lib/supabase/admin";
@@ -8,13 +9,12 @@ export const runtime = "nodejs";
 
 async function syncPlanFromSubscription(subscription: Stripe.Subscription) {
   const userId =
-    subscription.metadata.supabase_user_id ??
+    subscription.metadata?.supabase_user_id ??
     subscription.items.data[0]?.metadata?.supabase_user_id;
 
   if (!userId) return;
 
-  const active = subscription.status === "active" || subscription.status === "trialing";
-  await setUserPlan(userId, active ? "plus" : "free");
+  await setUserPlan(userId, planForSubscriptionStatus(subscription.status));
 }
 
 export async function POST(request: Request) {

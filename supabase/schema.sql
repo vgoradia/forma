@@ -42,3 +42,8 @@ create policy "Users update own scans"
 create policy "Users delete own scans"
   on public.user_scans for delete
   using (auth.uid() = user_id);
+
+-- Forma Plus is not a column in this schema. The plan lives on
+-- auth.users.raw_app_meta_data.plan, which only the service role can write.
+-- To copy a legacy user_metadata.plan value, run
+-- supabase/backfill-plan-app-metadata.sql once in the SQL editor.
