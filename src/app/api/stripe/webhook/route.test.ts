@@ -436,6 +436,25 @@ describe("POST /api/stripe/webhook", () => {
     expect(mocks.setUserPlan).toHaveBeenCalledWith("user-1", "plus");
   });
 
+  it("syncs a failed invoice that still uses the legacy subscription id", async () => {
+    mocks.constructEvent.mockReturnValue({
+      type: "invoice.payment_failed",
+      data: { object: { subscription: "sub_legacy", parent: null } },
+    });
+    mocks.subscriptionsRetrieve.mockResolvedValue({
+      ...subscription("past_due"),
+      customer: "cus_legacy",
+    });
+
+    const response = await post();
+
+    expect(response.status).toBe(200);
+    expect(mocks.subscriptionsRetrieve).toHaveBeenCalledWith("sub_legacy");
+    expect(mocks.setUserPlan).toHaveBeenCalledWith("user-1", "free", {
+      stripeCustomerId: "cus_legacy",
+    });
+  });
+
   it("ignores a failed invoice that is not for a subscription", async () => {
     mocks.constructEvent.mockReturnValue({
       type: "invoice.payment_failed",

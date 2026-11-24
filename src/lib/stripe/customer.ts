@@ -11,11 +11,22 @@ export function stripeCustomerId(
   return customer.id;
 }
 
-/** Subscription id on a modern Invoice (`parent.subscription_details`). */
+/**
+ * Subscription id for an invoice.
+ * Current API versions nest it under `parent.subscription_details`.
+ * Older webhook endpoints still send a top-level `subscription` id.
+ */
 export function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
   const parent = invoice.parent;
-  if (parent?.type !== "subscription_details") return null;
-  const subscription = parent.subscription_details?.subscription;
-  if (!subscription) return null;
-  return typeof subscription === "string" ? subscription : subscription.id;
+  if (parent?.type === "subscription_details") {
+    const subscription = parent.subscription_details?.subscription;
+    if (typeof subscription === "string") return subscription;
+    if (subscription && typeof subscription === "object") return subscription.id;
+  }
+
+  const legacy = (invoice as Stripe.Invoice & { subscription?: string | { id?: string } | null })
+    .subscription;
+  if (typeof legacy === "string" && legacy.trim()) return legacy;
+  if (legacy && typeof legacy === "object" && typeof legacy.id === "string") return legacy.id;
+  return null;
 }
