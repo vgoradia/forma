@@ -6,7 +6,20 @@ import { useFormaPlusCheckout } from "@/hooks/use-forma-plus-checkout";
 import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 import { cn } from "@/lib/utils";
 
-const perks = ["Unlimited scans", "Saved verdicts", "Dupes and alternatives", "Cancel anytime"];
+const perks = [
+  "Unlimited scans (fair use)",
+  "Saved verdicts across devices",
+  "Dupes and alternatives",
+  "Cancel anytime",
+];
+
+function RenewalDisclosure({ className }: { className?: string }) {
+  return (
+    <p className={cn("text-xs leading-relaxed", className)}>
+      Renews monthly until you cancel. Cancel anytime in Profile.
+    </p>
+  );
+}
 
 function PlusPerkGrid({ light = false }: { light?: boolean }) {
   return (
@@ -65,7 +78,7 @@ export function FormaPlusBanner({
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-indigo-200">Forma Plus</p>
               <p className="mt-0.5 text-lg font-bold text-white sm:text-xl">{title}</p>
-              <p className="mt-1 text-sm text-indigo-100">Unlimited verdicts on every scan</p>
+              <p className="mt-1 text-sm text-indigo-100">Unlimited scans (fair use) on every verdict</p>
             </div>
           </div>
           <button
@@ -77,6 +90,7 @@ export function FormaPlusBanner({
             {pending ? "Redirecting…" : `Upgrade · ${price}`}
           </button>
         </div>
+        <RenewalDisclosure className="relative mt-3 text-indigo-100" />
         {message && <p className="relative mt-3 text-sm text-indigo-100">{message}</p>}
       </div>
     );
@@ -100,7 +114,7 @@ export function FormaPlusBanner({
           </div>
           <h2 className="text-2xl font-bold leading-tight lg:text-3xl">{title}</h2>
           <p className="mt-3 text-base leading-relaxed text-indigo-100 lg:text-lg">
-            When viral finds pile up, Forma Plus gives you unlimited scans and keeps your verdicts.
+            When viral finds pile up, Forma Plus gives you unlimited scans (fair use) and keeps your verdicts.
           </p>
           <div className="mt-5">
             <PlusPerkGrid light />
@@ -114,7 +128,7 @@ export function FormaPlusBanner({
             {pending ? "Redirecting…" : `Get Forma Plus · ${price}`}
             <ArrowRight className="h-5 w-5" />
           </button>
-          <p className="mt-3 text-xs text-indigo-300">Cancel anytime · Secure checkout via Stripe</p>
+          <RenewalDisclosure className="mt-3 text-indigo-300" />
           {message && <p className="mt-2 text-sm text-violet-200">{message}</p>}
         </div>
       </div>
@@ -140,8 +154,9 @@ export function FormaPlusNavPromo() {
         <p className="text-sm font-bold text-white">Upgrade to Forma Plus</p>
       </div>
       <p className="mt-1.5 text-xs leading-snug text-indigo-100">
-        Unlimited scans · {price}
+        Unlimited scans (fair use) · {price}
       </p>
+      <RenewalDisclosure className="mt-2 text-indigo-100" />
       <p className="mt-2 text-xs font-semibold text-white/90">
         {pending ? "Redirecting…" : "Tap to upgrade →"}
       </p>
@@ -179,7 +194,7 @@ export function FormaPlusAnalysisUpsell({ className }: { className?: string }) {
               Stop guessing. Start deciding smarter.
             </h2>
             <p className="mt-3 text-base leading-relaxed text-indigo-100 sm:text-lg">
-              Get unlimited scans and keep every verdict with{" "}
+              Get unlimited scans (fair use) and keep every verdict with{" "}
               <span className="font-semibold text-white">Forma Plus</span>.
             </p>
             <div className="mt-5">
@@ -201,6 +216,7 @@ export function FormaPlusAnalysisUpsell({ className }: { className?: string }) {
               {pending ? "Redirecting…" : "Upgrade to Forma Plus"}
               <ArrowRight className="h-5 w-5" />
             </button>
+            <RenewalDisclosure className="text-center text-indigo-200" />
             <p className="text-center text-[11px] text-indigo-300">Secure checkout · Less than one impulse buy</p>
           </div>
         </div>
@@ -227,7 +243,8 @@ export function FormaPlusMobileSticky() {
       >
         <div className="text-left">
           <p className="text-sm font-bold text-white">Upgrade to Forma Plus</p>
-          <p className="text-[11px] text-indigo-100">Unlimited scans · {price}</p>
+          <p className="text-[11px] text-indigo-100">Unlimited scans (fair use) · {price}</p>
+          <RenewalDisclosure className="mt-1 text-[10px] text-indigo-100" />
         </div>
         <span className="flex shrink-0 items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm font-bold text-forma-primary">
           {pending ? "…" : "Upgrade"}
