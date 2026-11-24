@@ -112,6 +112,8 @@ export default function ProfilePage() {
   const scans = useScans();
   const [prefs, setPrefs] = useState<UserPrefs>(() => getPrefs());
   const [status, setStatus] = useState<string | null>(authStatusFromUrl);
+  const [portalPending, setPortalPending] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const wardrobeCount = countWardrobeItems(scans);
   const profile = useUserProfile();
   const { signOut } = useAuth();
@@ -134,6 +136,25 @@ export default function ProfilePage() {
     await signOut();
     setStatus("Signed out.");
     setTimeout(() => setStatus(null), 2500);
+  };
+
+  const openBillingPortal = async () => {
+    if (portalPending) return;
+    setPortalPending(true);
+    setPortalError(null);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setPortalError(data.error ?? "Could not open billing. Try again in a moment.");
+        setPortalPending(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setPortalError("Could not open billing. Try again in a moment.");
+      setPortalPending(false);
+    }
   };
 
   return (
@@ -298,6 +319,15 @@ export default function ProfilePage() {
             <h3 className="font-semibold text-gray-900">Forma Plus active</h3>
           </div>
           <p className="text-xs text-forma-muted">Thanks for supporting Forma — unlimited scans and Plus features are yours.</p>
+          <button
+            type="button"
+            onClick={() => void openBillingPortal()}
+            disabled={portalPending}
+            className="mt-4 w-full rounded-2xl bg-forma-primary py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            {portalPending ? "Opening billing portal…" : "Manage or cancel subscription"}
+          </button>
+          {portalError && <p className="mt-2 text-xs text-red-700">{portalError}</p>}
         </div>
       )}
 

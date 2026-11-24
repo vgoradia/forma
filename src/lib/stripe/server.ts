@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { getAppUrl } from "@/lib/app-url";
 import { getStripeSecretKey, isStripeConfigured } from "./config";
 
 let stripeClient: Stripe | null = null;
@@ -33,4 +34,11 @@ export async function findActivePlusSubscription(
   }
 
   return null;
+}
+
+export async function createBillingPortalSession(stripe: Stripe, customerId: string) {
+  return stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${getAppUrl()}/profile`,
+  });
 }
