@@ -1,3 +1,5 @@
+import { fetchPublicHttp } from "@/lib/safe-public-fetch";
+
 export async function findWikipediaImage(query: string): Promise<string | undefined> {
   const trimmed = query.trim();
   if (!trimmed) return undefined;
@@ -38,13 +40,12 @@ export async function findOpenGraphImage(pageUrl: string): Promise<string | unde
     const parsed = new URL(pageUrl);
     if (!["http:", "https:"].includes(parsed.protocol)) return undefined;
 
-    const response = await fetch(pageUrl, {
+    const response = await fetchPublicHttp(pageUrl, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; FormaBot/1.0; +https://forma.app)",
         Accept: "text/html",
       },
-      redirect: "follow",
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return undefined;

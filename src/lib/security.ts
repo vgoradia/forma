@@ -1,6 +1,49 @@
+import { BlockList, isIP } from "node:net";
+
 const MAX_QUERY_LENGTH = 500;
 const MAX_URL_LENGTH = 2048;
+const MAX_REDIRECT_LENGTH = 16_384;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Addresses the image proxy must never connect to. IPv4-mapped IPv6 is not
+ * listed here: Node treats that prefix as covering every IPv4 address, so
+ * mapped addresses are unwrapped and checked against the IPv4 ranges instead.
+ */
+const blockedAddresses = new BlockList();
+for (const [network, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+] as const) {
+  blockedAddresses.addSubnet(network, prefix, "ipv4");
+}
+for (const [network, prefix] of [
+  ["::", 128],
+  ["::1", 128],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["fec0::", 10],
+  ["ff00::", 8],
+  ["2001:db8::", 32],
+  ["2001::", 32],
+  ["2002::", 16],
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+] as const) {
+  blockedAddresses.addSubnet(network, prefix, "ipv6");
+}
 
 const ALLOWED_IMAGE_MIMES = new Set([
   "image/jpeg",
@@ -118,55 +161,121 @@ function looksLikeImage(bytes: ArrayBuffer, mimeType: string): boolean {
   return ALLOWED_IMAGE_MIMES.has(mimeType) && bytes.byteLength >= 64;
 }
 
+/** Hostname as it should be compared and resolved: no brackets, zone id, or trailing dot. */
+export function normalizeHostname(hostname: string): string {
+  let host = hostname.trim().toLowerCase();
+  if (host.endsWith(".")) host = host.slice(0, -1);
+  if (host.startsWith("[") && host.endsWith("]")) host = host.slice(1, -1);
+  const zone = host.indexOf("%");
+  if (zone !== -1) host = host.slice(0, zone);
+  return host;
+}
+
+function canonicalIpLiteral(hostname: string): string | null {
+  const host = normalizeHostname(hostname);
+  if (!host) return null;
+
+  const fromUrl = (value: string): string | null => {
+    try {
+      const formatted = value.includes(":")
+        ? new URL(`http://[${value}]`).hostname
+        : new URL(`http://${value}`).hostname;
+      const bare = normalizeHostname(formatted);
+      return isIP(bare) ? bare : null;
+    } catch {
+      return null;
+    }
+  };
+
+  if (isIP(host)) return fromUrl(host) ?? host;
+
+  // Decimal, octal, and hex forms. The WHATWG parser rewrites these to dotted IPv4;
+  // reject them when that rewrite lands on a non-public address.
+  if (/^\d+$/.test(host) || host.includes("0x") || /^0\d+\./.test(host)) {
+    return fromUrl(host);
+  }
+
+  return null;
+}
+
+/** IPv4 embedded in an IPv4-mapped IPv6 address, or null when the address is not mapped. */
+function ipv4FromMapped(ipv6: string): string | null {
+  const dotted = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(ipv6);
+  if (dotted) return isIP(dotted[1]) === 4 ? dotted[1] : null;
+
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(ipv6);
+  if (!hex) return null;
+  const high = Number.parseInt(hex[1], 16);
+  const low = Number.parseInt(hex[2], 16);
+  return `${(high >> 8) & 255}.${high & 255}.${(low >> 8) & 255}.${low & 255}`;
+}
+
+export function isIpLiteral(hostname: string): boolean {
+  return canonicalIpLiteral(hostname) !== null;
+}
+
+/** True for loopback, private, link-local, multicast, reserved, and tunnel addresses. */
+export function isBlockedIpAddress(address: string): boolean {
+  const canonical = canonicalIpLiteral(address);
+  if (!canonical) return false;
+
+  const mapped = ipv4FromMapped(canonical);
+  if (mapped) return blockedAddresses.check(mapped, "ipv4");
+
+  if (isIP(canonical) === 4) return blockedAddresses.check(canonical, "ipv4");
+  if (isIP(canonical) === 6) return blockedAddresses.check(canonical, "ipv6");
+  return true;
+}
+
+export function hasBlockedAddress(addresses: readonly string[]): boolean {
+  return addresses.length === 0 || addresses.some((address) => isBlockedIpAddress(address));
+}
+
 export function isBlockedHostname(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/\.$/, "");
+  const host = normalizeHostname(hostname);
   if (!host) return true;
+
+  if (isBlockedIpAddress(host)) return true;
 
   if (
     host === "localhost" ||
     host.endsWith(".localhost") ||
-    host === "0.0.0.0" ||
-    host.endsWith(".local")
+    host.endsWith(".local") ||
+    host.endsWith(".internal")
   ) {
     return true;
   }
 
-  if (host === "metadata.google.internal" || host === "metadata.goog") {
-    return true;
-  }
-
-  if (isPrivateIpv4(host) || isPrivateIpv6(host)) {
+  if (
+    host === "metadata.google.internal" ||
+    host === "metadata.goog" ||
+    host === "metadata" ||
+    host === "instance-data"
+  ) {
     return true;
   }
 
   return false;
 }
 
-function isPrivateIpv4(host: string): boolean {
-  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
-  if (!match) return false;
+/**
+ * Absolute URL of one redirect hop when that hop is still a public http(s) URL.
+ * Relative and protocol-relative Location values are resolved against the current URL.
+ */
+export function safeRedirectTarget(currentUrl: string, location: string): string | null {
+  const trimmed = location.trim();
+  if (!trimmed || trimmed.length > MAX_REDIRECT_LENGTH) return null;
 
-  const octets = match.slice(1).map(Number);
-  if (octets.some((n) => n > 255)) return true;
+  let next: URL;
+  try {
+    next = new URL(trimmed, currentUrl);
+  } catch {
+    return null;
+  }
 
-  const [a, b] = octets;
-  if (a === 10) return true;
-  if (a === 127) return true;
-  if (a === 0) return true;
-  if (a === 169 && b === 254) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
-  if (a === 100 && b >= 64 && b <= 127) return true;
-
-  return false;
-}
-
-function isPrivateIpv6(host: string): boolean {
-  const normalized = host.toLowerCase();
-  if (normalized === "::1") return true;
-  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
-  if (normalized.startsWith("fe80:")) return true;
-  return false;
+  if (next.href.length > MAX_REDIRECT_LENGTH) return null;
+  if (!isAllowedProxyImageUrl(next.href)) return null;
+  return next.href;
 }
 
 export function isAllowedProxyImageUrl(url: string): boolean {
