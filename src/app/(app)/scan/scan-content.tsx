@@ -47,6 +47,7 @@ export function ScanContent() {
 
   const handleAnalyze = async (formData: FormData, meta?: { imagePreview?: string }) => {
     if (!canStartScan(isPlus)) {
+      trackEvent("scan_limit_reached");
       setError("You've used all free scans this month. Upgrade to Forma Plus on Profile for unlimited verdicts.");
       return;
     }

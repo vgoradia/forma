@@ -305,6 +305,20 @@ export default function ProfilePage() {
           <p className="text-xs text-forma-muted">Thanks for supporting Forma — unlimited scans and Plus features are yours.</p>
         </div>
       )}
+
+      <p className="mt-10 text-center text-xs text-forma-muted">
+        <Link href="/privacy" className="hover:text-gray-700">
+          Privacy
+        </Link>
+        {" · "}
+        <Link href="/terms" className="hover:text-gray-700">
+          Terms
+        </Link>
+        {" · "}
+        <a href="mailto:contact@shopwithforma.com" className="hover:text-gray-700">
+          Contact
+        </a>
+      </p>
     </PageContainer>
   );
 }

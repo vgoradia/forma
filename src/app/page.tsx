@@ -283,6 +283,12 @@ export default function LandingPage() {
               <Link href="/about" className="hover:text-gray-900">
                 About
               </Link>
+              <Link href="/privacy" className="hover:text-gray-900">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-gray-900">
+                Terms
+              </Link>
               <Link href="/analysis/demo" className="hover:text-gray-900">
                 Demo
               </Link>

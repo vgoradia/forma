@@ -6,10 +6,15 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { LogoWordmark } from "@/components/logo";
 import { useAuth } from "@/components/auth-provider";
+import { trackEvent } from "@/lib/analytics";
 
 export default function PlusSuccessPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    trackEvent("plus_subscribed");
+  }, []);
 
   useEffect(() => {
     if (!loading && user) {

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { trackEvent } from "@/lib/analytics";
 
 export function useFormaPlusCheckout() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export function useFormaPlusCheckout() {
 
     setPending(true);
     setMessage("Redirecting to secure checkout…");
+    trackEvent("plus_checkout_started");
 
     try {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
