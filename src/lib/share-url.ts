@@ -1,3 +1,5 @@
+import { verdictSharePhrase } from "./shared-verdict";
+
 /** Build a shareable URL with referral tracking for growth metrics. */
 export function buildShareUrl(path: string, origin?: string): string {
   const base = origin ?? (typeof window !== "undefined" ? window.location.origin : "");
@@ -33,8 +35,9 @@ export function getVerdictSharePayload(options: {
   path: string;
 }): { title: string; text: string; url: string } {
   const url = buildShareUrl(options.path);
-  const verdict = options.recommendation.toUpperCase();
+  const verdict = verdictSharePhrase(options.recommendation);
+  const headline = options.headline.trim().replace(/[.!?…]+$/, "");
   const title = `${options.productTitle} — Forma says ${verdict}`;
-  const text = `Forma says ${verdict}: ${options.headline} Lowest price ${options.lowestPrice} at ${options.retailer}.`;
+  const text = `Forma says ${verdict}: ${headline}. Lowest price ${options.lowestPrice} at ${options.retailer}.`;
   return { title, text, url };
 }
