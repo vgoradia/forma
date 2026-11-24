@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Code2, Globe, Sparkles, Target, Users } from "lucide-react";
 import { LogoWordmark } from "@/components/logo";
+import { SiteFooter } from "@/components/site-footer";
 import { getAppUrl } from "@/lib/app-url";
+import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 
 export const metadata: Metadata = {
   title: "About Forma — Buy or skip before you checkout",
@@ -28,8 +30,10 @@ const stack = [
 export default function AboutPage() {
   const appUrl = getAppUrl();
 
+  const plusPrice = getFormaPlusPriceLabel();
+
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
+    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <header className="border-b border-forma-border bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/">
@@ -44,7 +48,7 @@ export default function AboutPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:px-8 sm:py-16">
         <p className="mb-3 text-sm font-medium text-forma-primary">About Forma</p>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
           Stop impulse-buying what you saw on TikTok
@@ -124,9 +128,9 @@ export default function AboutPage() {
               <h2 className="text-lg font-semibold text-gray-900">Monetization</h2>
             </div>
             <p className="text-sm leading-relaxed text-forma-muted">
-              Forma is free to use. Outbound retailer links include affiliate tracking (Amazon
-              Associates and UTM params) so the product can sustain itself as usage grows — without
-              paywalls blocking the core experience.
+              Forma has a free tier and optional Forma Plus ({plusPrice}). Outbound retailer links
+              include affiliate tracking (Amazon Associates and other retail affiliate networks) so
+              the product can sustain itself as usage grows.
             </p>
           </div>
         </section>
@@ -153,6 +157,7 @@ export default function AboutPage() {
           </Link>
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }
