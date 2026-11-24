@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import { getAlternativeTierLabel } from "@/lib/scan-helpers";
 import { isBookmarked, toggleBookmark } from "@/lib/storage";
 import { trackEvent } from "@/lib/analytics";
 import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
+import { requestPublicShare } from "@/lib/shared-verdict";
 import { getVerdictSharePayload } from "@/lib/share-url";
 
 function Card({ title, children, className }: { title?: string; children: React.ReactNode; className?: string }) {
@@ -60,6 +61,20 @@ export function AnalysisDetail({
   const heroImage = getAnalysisHeroImage(analysis, imagePreview);
   const [saved, setSaved] = useState(() => (scanId ? isBookmarked(scanId) : false));
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const publishedPath = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!scanId) return;
+    try {
+      const savedPath = sessionStorage.getItem(`forma_share_${scanId}`);
+      if (savedPath && /^\/v\/[A-Za-z0-9]{10}$/.test(savedPath)) {
+        publishedPath.current = savedPath;
+      }
+    } catch {
+      // Private browsing can block sessionStorage. The next share creates a new link.
+    }
+  }, [scanId]);
 
   const handleSave = () => {
     if (!scanId) return;
@@ -67,28 +82,65 @@ export function AnalysisDetail({
   };
 
   const handleShare = async () => {
-    const path = scanId ? `/analysis/${scanId}` : "/analysis/demo";
-    const { title, text, url } = getVerdictSharePayload({
-      productTitle,
-      recommendation: analysis.verdict.recommendation,
-      headline: analysis.verdict.headline,
-      lowestPrice: formatPrice(analysis.lowestPrice.price),
-      retailer: analysis.lowestPrice.retailer,
-      path,
-    });
+    if (sharing) return;
+    setSharing(true);
+    setShareMessage(null);
+
+    const fail = () => {
+      setShareMessage("Could not share");
+      window.setTimeout(() => setShareMessage(null), 2500);
+    };
 
     try {
-      trackEvent("share_analysis", { has_scan_id: Boolean(scanId) });
-      if (navigator.share) {
-        await navigator.share({ title, text, url });
-        return;
+      let path = "/analysis/demo";
+      if (scanId) {
+        if (!publishedPath.current) {
+          const published = await requestPublicShare(analysis);
+          if (!published) {
+            fail();
+            return;
+          }
+          publishedPath.current = published;
+          try {
+            sessionStorage.setItem(`forma_share_${scanId}`, published);
+          } catch {
+            // The in-memory path still works until this page unmounts.
+          }
+        }
+        if (!publishedPath.current) {
+          fail();
+          return;
+        }
+        path = publishedPath.current;
       }
+
+      const { title, text, url } = getVerdictSharePayload({
+        productTitle,
+        recommendation: analysis.verdict.recommendation,
+        headline: analysis.verdict.headline,
+        lowestPrice: formatPrice(analysis.lowestPrice.price),
+        retailer: analysis.lowestPrice.retailer,
+        path,
+      });
+
+      trackEvent("share_analysis", { has_scan_id: Boolean(scanId) });
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+        }
+      }
+
       await navigator.clipboard.writeText(`${text}\n${url}`);
       setShareMessage("Verdict link copied!");
-      setTimeout(() => setShareMessage(null), 2000);
+      window.setTimeout(() => setShareMessage(null), 2000);
     } catch {
-      setShareMessage("Could not share");
-      setTimeout(() => setShareMessage(null), 2000);
+      fail();
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -177,10 +229,11 @@ export function AnalysisDetail({
         <button
           type="button"
           onClick={() => void handleShare()}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forma-primary py-3 text-sm font-semibold text-white lg:w-auto lg:px-6"
+          disabled={sharing}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-forma-primary py-3 text-sm font-semibold text-white disabled:opacity-70 lg:w-auto lg:px-6"
         >
           <Share2 className="h-4 w-4" />
-          Share verdict
+          {sharing ? "Creating link…" : "Share verdict"}
         </button>
         {shareMessage && (
           <p className="mt-2 text-center text-xs font-medium text-forma-primary lg:text-left">{shareMessage}</p>
@@ -218,7 +271,8 @@ export function AnalysisDetail({
         <button
           type="button"
           onClick={() => void handleShare()}
-          className="flex items-center justify-center gap-2 rounded-xl border border-forma-border bg-white py-3 text-xs font-semibold text-gray-700 lg:text-sm sm:hidden"
+          disabled={sharing}
+          className="flex items-center justify-center gap-2 rounded-xl border border-forma-border bg-white py-3 text-xs font-semibold text-gray-700 disabled:opacity-70 lg:text-sm sm:hidden"
         >
           <Share2 className="h-4 w-4" /> Share
         </button>

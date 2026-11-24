@@ -47,3 +47,6 @@ create policy "Users delete own scans"
 -- auth.users.raw_app_meta_data.plan, which only the service role can write.
 -- To copy a legacy user_metadata.plan value, run
 -- supabase/backfill-plan-app-metadata.sql once in the SQL editor.
+--
+-- Public share links live in supabase/shared-verdicts.sql.
+-- Run that file too (existing projects that already applied the statements above).

@@ -128,8 +128,10 @@ function AnalysisContent({ id }: { id: string }) {
     return (
       <PageContainer>
         <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-          <p className="text-sm text-forma-muted">This analysis isn&apos;t saved on this device.</p>
-          <p className="mt-1 text-xs text-forma-muted">Links only work in the browser where you ran the scan.</p>
+          <p className="text-sm text-forma-muted">This scan isn&apos;t on this device.</p>
+          <p className="mt-1 max-w-sm text-xs text-forma-muted">
+            Saved scans stay in the browser that ran them. A shared verdict link opens on any phone.
+          </p>
           <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-4">
             <Link href="/scan" className="text-sm font-semibold text-forma-primary">
               Start a new scan
