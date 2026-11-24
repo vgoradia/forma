@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readTrustedPlan } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { isStripeConfigured } from "@/lib/stripe/config";
@@ -20,7 +21,7 @@ export async function GET() {
   }
 
   if (!isStripeConfigured() || !user.email) {
-    return NextResponse.json({ plan: "free", configured: isStripeConfigured() });
+    return NextResponse.json({ plan: readTrustedPlan(user), configured: isStripeConfigured() });
   }
 
   try {
@@ -28,13 +29,12 @@ export async function GET() {
     const subscription = await findActivePlusSubscription(stripe, user.email);
     const plan = subscription ? "plus" : "free";
 
-    const metadataPlan = user.user_metadata?.plan;
-    if (metadataPlan !== plan) {
+    if (readTrustedPlan(user) !== plan) {
       void setUserPlan(user.id, plan);
     }
 
     return NextResponse.json({ plan, configured: true });
   } catch {
-    return NextResponse.json({ plan: "free", configured: isStripeConfigured() });
+    return NextResponse.json({ plan: readTrustedPlan(user), configured: isStripeConfigured() });
   }
 }

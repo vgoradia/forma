@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { readTrustedPlan, type UserPlan } from "@/lib/plan";
 
-export type UserPlan = "free" | "plus";
+export type { UserPlan };
 
 export function useSubscriptionPlan() {
   const { user, loading: authLoading } = useAuth();
@@ -35,8 +36,9 @@ export function useSubscriptionPlan() {
         }
       } catch {
         if (!cancelled) {
-          const metadataPlan = user.user_metadata?.plan;
-          setPlan(metadataPlan === "plus" ? "plus" : "free");
+          // Display only. app_metadata is signed into the session by Supabase;
+          // user_metadata is not consulted because the client can edit it.
+          setPlan(readTrustedPlan(user));
         }
       } finally {
         if (!cancelled) setLoading(false);

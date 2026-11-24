@@ -45,9 +45,9 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 Use the signing secret Stripe CLI prints for local `STRIPE_WEBHOOK_SECRET`.
 
-## 5. Supabase service role (recommended)
+## 5. Supabase service role (required to persist the plan)
 
-Webhook updates the user's plan in Supabase metadata.
+The webhook writes Forma Plus to `app_metadata.plan`. Only the service role can change `app_metadata`. Do not store the plan in `user_metadata` — a signed-in user can edit that from the client and would grant themselves unlimited scans.
 
 Supabase → **Settings → API** → copy **service_role** key (keep secret):
 
@@ -55,7 +55,11 @@ Supabase → **Settings → API** → copy **service_role** key (keep secret):
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-Without this, plan status still works via live Stripe lookup on profile load, but metadata won't sync instantly.
+Without this key, an active Stripe subscription still unlocks Plus on scan and profile load, but the plan is not saved on the user.
+
+### Existing subscribers
+
+If Plus was previously stored in `user_metadata.plan`, run `supabase/backfill-plan-app-metadata.sql` once in the Supabase SQL editor. Review the preview query before the update — that field was client-writable. Paying users still resolve to Plus via Stripe before the backfill runs.
 
 ## 6. Environment variables
 
@@ -67,7 +71,7 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PRICE_ID=price_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 NEXT_PUBLIC_FORMA_PLUS_PRICE=$9.99/mo
-SUPABASE_SERVICE_ROLE_KEY=...   # optional but recommended
+SUPABASE_SERVICE_ROLE_KEY=...   # required to persist Plus on app_metadata
 ```
 
 Redeploy after adding to Vercel.

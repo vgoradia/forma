@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { describe, test } from "node:test";
 import { lookup as dnsLookup } from "node:dns";
+import { describe, test } from "vitest";
 import {
   hasBlockedAddress,
   isAllowedProxyImageUrl,
@@ -8,13 +8,13 @@ import {
   isBlockedIpAddress,
   safeRedirectTarget,
   validateProductUrl,
-} from "../src/lib/security.ts";
+} from "@/lib/security";
 import {
   fetchPublicHttp,
   publicAddressLookup,
   UnsafeUrlError,
-} from "../src/lib/safe-public-fetch.ts";
-import type { UpstreamResponse } from "../src/lib/safe-public-fetch.ts";
+} from "@/lib/safe-public-fetch";
+import type { UpstreamResponse } from "@/lib/safe-public-fetch";
 
 const PUBLIC_IMAGE = "https://cdn.example.com/a.jpg";
 

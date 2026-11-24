@@ -1,7 +1,8 @@
 import { createHash } from "crypto";
 import type { User } from "@supabase/supabase-js";
+import { readTrustedPlan } from "@/lib/plan";
 import { FREE_SCANS_PER_MONTH } from "@/lib/scan-quota";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin, setUserPlan } from "@/lib/supabase/admin";
 import { isStripeConfigured } from "@/lib/stripe/config";
 import { findActivePlusSubscription, getStripe } from "@/lib/stripe/server";
 
@@ -21,7 +22,9 @@ export function userSubjectKey(userId: string): string {
 export async function resolveUserPlan(user: User | null): Promise<"plus" | "free"> {
   if (!user) return "free";
 
-  if (user.user_metadata?.plan === "plus") {
+  // app_metadata is written only by the service role (Stripe webhook / this server).
+  // Never read user_metadata.plan — the client can set that with auth.updateUser.
+  if (readTrustedPlan(user) === "plus") {
     return "plus";
   }
 
@@ -32,7 +35,11 @@ export async function resolveUserPlan(user: User | null): Promise<"plus" | "free
   try {
     const stripe = getStripe();
     const subscription = await findActivePlusSubscription(stripe, user.email);
-    return subscription ? "plus" : "free";
+    if (!subscription) return "free";
+
+    // Remember a confirmed subscription so the next scan does not need Stripe.
+    void setUserPlan(user.id, "plus");
+    return "plus";
   } catch {
     return "free";
   }
