@@ -51,6 +51,11 @@ export default function PrivacyPage() {
               <li>
                 <strong>Usage:</strong> Anonymous analytics (e.g. page views, scan and share events) via Vercel Analytics.
               </li>
+              <li>
+                <strong>Shared verdicts:</strong> If you tap Share verdict, we store a public copy of that product
+                verdict (name, prices, recommendation, and retailer links) so the link works for anyone. That copy does
+                not include your account, email, user id, or uploaded screenshot.
+              </li>
             </ul>
           </section>
 

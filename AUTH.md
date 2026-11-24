@@ -51,8 +51,9 @@ In Supabase → **Authentication → URL Configuration**:
 ## 6. Cloud scans + server quota (recommended for production)
 
 1. In Supabase → **SQL Editor**, run the script in **`supabase/schema.sql`** in this repo.
-2. Add **`SUPABASE_SERVICE_ROLE_KEY`** to Vercel env (Settings → API → service role). **Never expose it to the client.**
-3. Redeploy. Free scans are enforced on the server; signed-in users sync scan history to Supabase.
+2. Run **`supabase/shared-verdicts.sql`** in the same editor (public share links). Safe to re-run. Do this even if `schema.sql` was applied earlier.
+3. Add **`SUPABASE_SERVICE_ROLE_KEY`** to Vercel env (Settings → API → service role). **Never expose it to the client.** Required for server scan limits, Stripe webhooks, and creating share links.
+4. Redeploy. Free scans are enforced on the server; signed-in users sync scan history to Supabase. Shared verdicts are written only by the server and can be opened by anyone with the link.
 
 ## 7. Test locally
 

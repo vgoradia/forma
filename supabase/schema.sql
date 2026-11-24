@@ -42,3 +42,6 @@ create policy "Users update own scans"
 create policy "Users delete own scans"
   on public.user_scans for delete
   using (auth.uid() = user_id);
+
+-- Public share links live in supabase/shared-verdicts.sql.
+-- Run that file too (existing projects that already applied the statements above).
