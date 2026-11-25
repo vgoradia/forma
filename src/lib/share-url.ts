@@ -1,4 +1,7 @@
+import { alignVerdictPriceText } from "./price-estimates";
+import { formatAtRetailer, stripPlaceholderMentions } from "./product-label";
 import { verdictSharePhrase } from "./shared-verdict";
+import { coercePrice } from "./utils";
 
 /** Build a shareable URL with referral tracking for growth metrics. */
 export function buildShareUrl(path: string, origin?: string): string {
@@ -37,11 +40,17 @@ export function getVerdictSharePayload(options: {
 }): { title: string; text: string; url: string } {
   const url = buildShareUrl(options.path);
   const verdict = verdictSharePhrase(options.recommendation);
-  const headline = options.headline.trim().replace(/[.!?…]+$/, "");
+  const displayed = coercePrice(options.lowestPrice);
+  const cleanedHeadline = stripPlaceholderMentions(options.headline);
+  const pricedHeadline = displayed
+    ? alignVerdictPriceText(cleanedHeadline, { displayed, shown: [displayed] })
+    : cleanedHeadline;
+  const headline = pricedHeadline.trim().replace(/[.!?…]+$/, "");
   const title = `${options.productTitle} — Forma says ${verdict}`;
   const pricePhrase = options.priceEstimated
     ? `Estimated price about ${options.lowestPrice}`
     : `Lowest price ${options.lowestPrice}`;
-  const text = `Forma says ${verdict}: ${headline}. ${pricePhrase} at ${options.retailer}.`;
+  const atRetailer = formatAtRetailer(options.retailer);
+  const text = `Forma says ${verdict}: ${headline}. ${pricePhrase}${atRetailer ? ` ${atRetailer}` : ""}.`;
   return { title, text, url };
 }

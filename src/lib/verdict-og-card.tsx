@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { verdictTone, type SharedVerdict } from "@/lib/shared-verdict";
+import { sanitizeLabel, stripPlaceholderMentions } from "@/lib/product-label";
 import { formatPrice, formatProductTitle } from "@/lib/utils";
 
 export const VERDICT_OG_SIZE = { width: 1200, height: 630 };
@@ -27,12 +28,12 @@ export async function renderVerdictImage(verdict: SharedVerdict) {
   const logoSrc = await loadLogoSrc();
   const tone = verdictTone(verdict.verdict.recommendation);
   const title = clip(formatProductTitle(verdict.product.brand, verdict.product.name) || "This find", 64);
-  const headline = clip(verdict.verdict.headline, 110);
+  const headline = clip(stripPlaceholderMentions(verdict.verdict.headline), 110);
   const verified = verdict.lowestPrice.priceVerified && !verdict.lowestPrice.estimated;
   const price = formatPrice(verdict.lowestPrice.price);
   const priceLabel = verified ? "Lowest price" : "Estimated price";
   const priceText = verified ? price : `about ${price}`;
-  const retailer = clip(verdict.lowestPrice.retailer, 32);
+  const retailer = clip(sanitizeLabel(verdict.lowestPrice.retailer), 32);
 
   return new ImageResponse(
     (
@@ -70,7 +71,7 @@ export async function renderVerdictImage(verdict: SharedVerdict) {
         <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
           <span style={{ fontSize: 24, color: "#A1A1AA" }}>{priceLabel}</span>
           <span style={{ fontSize: 40, fontWeight: 700, color: tone.onDark }}>{priceText}</span>
-          <span style={{ fontSize: 24, color: "#E4E4E7" }}>at {retailer}</span>
+          {retailer ? <span style={{ fontSize: 24, color: "#E4E4E7" }}>at {retailer}</span> : null}
         </div>
       </div>
     ),

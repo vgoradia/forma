@@ -4,6 +4,7 @@ import type { AnalyzeInput, ProductAnalysis } from "./types";
 import { generateMockAnalysis } from "./mock-analysis";
 import { enrichAnalysisLinks } from "./enrich-links";
 import { resolveProductUrl, resolveAlternativeUrl, resolveSecondhandUrl } from "./product-links";
+import { sanitizeLabel, sanitizeProductName, stripPlaceholderMentions } from "./product-label";
 import { coercePrice, stripDuplicateBrand } from "./utils";
 import { ANALYSIS_SYSTEM_PROMPT } from "./analysis-prompt";
 import {
@@ -33,20 +34,21 @@ function normalizeAnalysis(
   raw: Omit<ProductAnalysis, "id" | "analyzedAt" | "lowestPrice">
 ): Omit<ProductAnalysis, "id" | "analyzedAt" | "lowestPrice"> {
   const confidence = raw.identifiedProduct?.confidence ?? 0.8;
-  const brand = raw.identifiedProduct?.brand ?? "";
-  const name = stripDuplicateBrand(brand, raw.identifiedProduct?.name ?? "");
+  const brand = sanitizeLabel(raw.identifiedProduct?.brand);
+  const name = stripDuplicateBrand(brand, sanitizeProductName(raw.identifiedProduct?.name ?? ""));
 
   const prices = (Array.isArray(raw.prices) ? raw.prices : []).map((p) =>
     asUnverifiedEstimate({
       ...p,
+      retailer: sanitizeLabel(p.retailer),
       price: coercePrice(p.price) ?? 0,
-      url: resolveProductUrl(p.url, p.retailer, brand, name),
+      url: resolveProductUrl(p.url, sanitizeLabel(p.retailer), brand, name),
     })
   );
 
   const alternatives = (Array.isArray(raw.alternatives) ? raw.alternatives : []).map((alt) => {
-    const altBrand = alt.brand ?? "";
-    const altName = stripDuplicateBrand(altBrand, alt.name ?? "");
+    const altBrand = sanitizeLabel(alt.brand);
+    const altName = stripDuplicateBrand(altBrand, sanitizeProductName(alt.name ?? ""));
     return asUnverifiedEstimate({
       ...alt,
       brand: altBrand,
@@ -71,6 +73,7 @@ function normalizeAnalysis(
       ...raw.identifiedProduct,
       brand,
       name,
+      description: stripPlaceholderMentions(raw.identifiedProduct?.description ?? ""),
       estimatedRetailPrice: coercePrice(raw.identifiedProduct?.estimatedRetailPrice) ?? 0,
       colors: toStringArray(raw.identifiedProduct?.colors),
       materials: toStringArray(raw.identifiedProduct?.materials),
@@ -92,6 +95,11 @@ function normalizeAnalysis(
     priceHistory: flagModelPriceHistory(raw.priceHistory, coercePrice),
     priceTrend: normalizePriceTrend(raw.priceTrend),
     salePrediction: flagModelSalePrediction(raw.salePrediction, coercePrice),
+    verdict: {
+      ...raw.verdict,
+      headline: stripPlaceholderMentions(raw.verdict?.headline ?? ""),
+      reasoning: stripPlaceholderMentions(raw.verdict?.reasoning ?? ""),
+    },
     stylingTips: toStringArray(raw.stylingTips),
     wardrobeMatches: Array.isArray(raw.wardrobeMatches) ? raw.wardrobeMatches : [],
     secondhand: {
@@ -177,7 +185,7 @@ function finalizeAnalysis(
   const lowestValid = prices.find((p) => coercePrice(p.price) !== undefined);
   const lowestPrice = asUnverifiedEstimate(
     lowestValid ?? {
-      retailer: normalized.identifiedProduct.brand || "Unknown",
+      retailer: sanitizeLabel(normalized.identifiedProduct.brand),
       price: coercePrice(normalized.identifiedProduct.estimatedRetailPrice) ?? 0,
       url: "#",
       inStock: true,

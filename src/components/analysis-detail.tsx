@@ -15,7 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import type { ProductAnalysis } from "@/lib/types";
-import { cn, formatPrice, formatProductTitle, toArray } from "@/lib/utils";
+import { cn, formatAtRetailer, formatPrice, formatProductTitle, sanitizeLabel, stripPlaceholderMentions, toArray } from "@/lib/utils";
 import { ProductLink } from "@/components/product-link";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
@@ -65,7 +65,10 @@ export function AnalysisDetail({
   scanId?: string;
 }) {
   const product = analysis.identifiedProduct;
-  const productTitle = formatProductTitle(product.brand, product.name);
+  const productTitle = formatProductTitle(product.brand, product.name) || product.category || "This item";
+  const atRetailer = formatAtRetailer(analysis.lowestPrice.retailer);
+  const verdictHeadline = stripPlaceholderMentions(analysis.verdict.headline);
+  const verdictReasoning = stripPlaceholderMentions(analysis.verdict.reasoning);
   const colors = toArray(product.colors);
   const match = Math.round(product.confidence * 100);
   const heroImage = getAnalysisHeroImage(analysis, imagePreview);
@@ -142,9 +145,9 @@ export function AnalysisDetail({
       const { title, text, url } = getVerdictSharePayload({
         productTitle,
         recommendation: analysis.verdict.recommendation,
-        headline: analysis.verdict.headline,
+        headline: verdictHeadline,
         lowestPrice: formatPrice(analysis.lowestPrice.price),
-        retailer: analysis.lowestPrice.retailer,
+        retailer: sanitizeLabel(analysis.lowestPrice.retailer),
         priceEstimated: isEstimatedPrice(analysis.lowestPrice),
         path,
       });
@@ -225,11 +228,13 @@ export function AnalysisDetail({
           <p className="mt-1 text-sm text-forma-muted">
             {colors[0] ?? "—"} • {product.category}
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-gray-600 lg:text-base">{product.description}</p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-600 lg:text-base">
+            {stripPlaceholderMentions(product.description)}
+          </p>
           <p className="mt-3 text-sm text-gray-700 lg:text-base">
             {lowestEstimated ? "Estimated price: about " : "Lowest price found: "}
-            <span className="font-bold text-emerald-600">{formatPrice(analysis.lowestPrice.price)}</span> at{" "}
-            {analysis.lowestPrice.retailer}
+            <span className="font-bold text-emerald-600">{formatPrice(analysis.lowestPrice.price)}</span>
+            {atRetailer ? ` ${atRetailer}` : ""}
             {lowestEstimated ? <EstimateBadge /> : " (verified)"}
           </p>
           {lowestEstimated && <EstimateFootnote>{PRICE_ESTIMATE_NOTE}</EstimateFootnote>}
@@ -246,9 +251,9 @@ export function AnalysisDetail({
 
       <div className="mb-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/90 to-violet-50/80 p-4 lg:mb-5 lg:p-5">
         <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Your verdict</p>
-        <p className="mt-1 text-base font-semibold text-gray-900 lg:text-lg">{analysis.verdict.headline}</p>
+        <p className="mt-1 text-base font-semibold text-gray-900 lg:text-lg">{verdictHeadline}</p>
         <p className="mt-2 text-xs leading-relaxed text-forma-muted lg:text-sm line-clamp-3">
-          {analysis.verdict.reasoning}
+          {verdictReasoning}
         </p>
         <button
           type="button"
@@ -321,7 +326,7 @@ export function AnalysisDetail({
               return (
                 <div key={`${p.retailer}-${i}`} className="flex items-center justify-between text-xs lg:text-sm">
                   <span className={cn("font-medium", i === 0 ? "text-gray-900" : "text-forma-muted")}>
-                    {p.retailer}
+                    {sanitizeLabel(p.retailer)}
                   </span>
                   <span className={cn("font-semibold", i === 0 ? "text-emerald-600" : "text-gray-700")}>
                     {estimated ? `about ${formatPrice(p.price)}` : formatPrice(p.price)}

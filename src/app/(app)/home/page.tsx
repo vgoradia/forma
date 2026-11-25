@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Camera, ChevronRight, BadgeCheck } from "lucide-react";
 import { getRecentScanRows } from "@/lib/scan-helpers";
 import { saveScan, useLastScan, useScans } from "@/lib/storage";
-import { formatPrice, formatProductTitle } from "@/lib/utils";
+import { formatAtRetailer, formatPrice, formatProductTitle, stripPlaceholderMentions } from "@/lib/utils";
 import { isEstimatedPrice } from "@/lib/price-estimates";
 import { EstimateBadge } from "@/components/estimate-badge";
 import { PageContainer } from "@/components/page-container";
@@ -66,6 +66,8 @@ export default function AppHomePage() {
   const recentScans = getRecentScanRows(scans);
   const product = lastScan?.analysis.identifiedProduct;
   const lowest = lastScan?.analysis.lowestPrice;
+  const productTitle = product ? formatProductTitle(product.brand, product.name) || product.category || "This item" : "";
+  const atRetailer = lowest ? formatAtRetailer(lowest.retailer) : "";
   const showPlus =
     plan !== "plus" && (scans.length > 0 || quota.remaining <= 2);
 
@@ -112,21 +114,21 @@ export default function AppHomePage() {
           <div className="flex gap-4 lg:gap-6">
             <ProductImage
               src={getAnalysisHeroImage(lastScan.analysis, lastScan.imagePreview)}
-              alt={formatProductTitle(product.brand, product.name)}
+              alt={productTitle}
               fit="contain"
               className="h-24 w-20 shrink-0 rounded-2xl lg:h-36 lg:w-32"
             />
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-gray-900 lg:text-lg">
-                {formatProductTitle(product.brand, product.name)}
+                {productTitle}
               </p>
               <p className="mt-2 text-sm text-gray-700">
-                {lastScan.analysis.verdict.headline}
+                {stripPlaceholderMentions(lastScan.analysis.verdict.headline)}
               </p>
               <p className="mt-2 text-sm text-gray-700 lg:text-base">
                 {isEstimatedPrice(lowest) ? "Estimated: about " : "Lowest: "}
-                <span className="font-bold text-emerald-600">{formatPrice(lowest.price)}</span> at{" "}
-                {lowest.retailer}
+                <span className="font-bold text-emerald-600">{formatPrice(lowest.price)}</span>
+                {atRetailer ? ` ${atRetailer}` : ""}
                 {isEstimatedPrice(lowest) ? <EstimateBadge /> : " (verified)"}
               </p>
             </div>
@@ -168,8 +170,10 @@ export default function AppHomePage() {
                     {item.icon}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{item.source}</p>
-                    <p className="text-xs text-forma-muted">{item.time}</p>
+                    <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                    <p className="text-xs text-forma-muted">
+                      {item.name === item.source ? item.time : `${item.source} · ${item.time}`}
+                    </p>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-gray-300" />

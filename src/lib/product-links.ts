@@ -1,3 +1,5 @@
+import { sanitizeLabel, sanitizeProductName } from "./product-label";
+
 function encodeQuery(query: string): string {
   return encodeURIComponent(query.trim());
 }
@@ -181,12 +183,16 @@ export const RETAILER_DOMAINS: Record<string, string> = {
 };
 
 export function resolveRetailerDomain(label: string): string | undefined {
-  const matched = matchRetailerKey(label);
+  const clean = sanitizeLabel(label);
+  const key = clean.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // An empty or placeholder label would match unrelated domains ("N/A" -> "na" inside "oldnavy").
+  if (!key) return undefined;
+
+  const matched = matchRetailerKey(clean);
   if (matched && RETAILER_DOMAINS[matched]) {
     return RETAILER_DOMAINS[matched];
   }
 
-  const key = label.toLowerCase().replace(/[^a-z0-9]/g, "");
   for (const [retailer, domain] of Object.entries(RETAILER_DOMAINS)) {
     const rk = retailer.replace(/[^a-z0-9]/g, "");
     if (key.includes(rk) || rk.includes(key)) return domain;
@@ -196,7 +202,10 @@ export function resolveRetailerDomain(label: string): string | undefined {
 }
 
 function matchRetailerKey(label: string): string | undefined {
-  const normalized = label.toLowerCase().replace(/[^a-z0-9&.\s-]/g, "").trim();
+  const clean = sanitizeLabel(label);
+  const normalized = clean.toLowerCase().replace(/[^a-z0-9&.\s-]/g, "").trim();
+  // An empty label would match every key via `key.includes("")`.
+  if (!normalized) return undefined;
 
   if (RETAILER_SEARCH[normalized]) return normalized;
 
@@ -208,22 +217,26 @@ function matchRetailerKey(label: string): string | undefined {
 }
 
 export function buildProductSearchUrl(retailer: string, brand: string, name: string): string {
-  const query = encodeQuery(buildSearchQueryText(brand, name));
-  const retailerKey = matchRetailerKey(retailer);
+  const cleanRetailer = sanitizeLabel(retailer);
+  const cleanBrand = sanitizeLabel(brand);
+  const query = encodeQuery(buildSearchQueryText(cleanBrand, name));
+  const retailerKey = cleanRetailer ? matchRetailerKey(cleanRetailer) : undefined;
 
   if (retailerKey) return RETAILER_SEARCH[retailerKey](query);
 
-  const brandKey = matchRetailerKey(brand);
+  const brandKey = cleanBrand ? matchRetailerKey(cleanBrand) : undefined;
   const retailerLooksLikeBrand =
-    !retailer.trim() ||
-    retailer.toLowerCase().includes(brand.toLowerCase()) ||
-    brand.toLowerCase().includes(retailer.toLowerCase());
+    !cleanRetailer ||
+    !cleanBrand ||
+    cleanRetailer.toLowerCase().includes(cleanBrand.toLowerCase()) ||
+    cleanBrand.toLowerCase().includes(cleanRetailer.toLowerCase());
 
   if (brandKey && retailerLooksLikeBrand) {
     return RETAILER_SEARCH[brandKey](query);
   }
 
-  return `https://www.amazon.com/s?k=${encodeQuery(`${buildSearchQueryText(brand, name)} ${retailer}`.trim())}`;
+  const search = [buildSearchQueryText(cleanBrand, name), cleanRetailer].filter(Boolean).join(" ");
+  return `https://www.amazon.com/s?k=${encodeQuery(search)}`;
 }
 
 export function buildAlternativeUrl(brand: string, name: string): string {
@@ -407,9 +420,9 @@ export function resolveRetailerLink(raw?: string): string | undefined {
 }
 
 function buildSearchQueryText(brand: string, name: string): string {
-  const b = brand.trim();
-  const n = name.trim();
+  const b = sanitizeLabel(brand);
+  const n = sanitizeProductName(name);
   if (!b) return n;
   if (n.toLowerCase().startsWith(b.toLowerCase())) return n;
-  return `${b} ${n}`;
+  return `${b} ${n}`.trim();
 }

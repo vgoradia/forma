@@ -218,6 +218,81 @@ describe("share ids and urls", () => {
     });
     assert.match(estimated.text, /Estimated price about \$80\.00 at Nike/);
     assert.equal(estimated.text.includes("Lowest price"), false);
+    const unnamed = getVerdictSharePayload({
+      productTitle: "Red Cowl Neck Slip Dress",
+      recommendation: "skip",
+      headline: "Skip this $85 dress at Unknown",
+      lowestPrice: "$79.00",
+      retailer: "Unknown",
+      priceEstimated: true,
+      path: "/v/abcdefghij",
+    });
+    assert.equal(unnamed.text.toLowerCase().includes("unknown"), false);
+    assert.equal(unnamed.text.includes("$85"), false);
+    assert.match(unnamed.text, /\$79\.00/);
+    assert.match(unnamed.text, /Estimated price about \$79\.00\./);
+    assert.equal(unnamed.title.includes("Unknown"), false);
+  });
+
+  it("drops an unknown brand and retailer and matches the shown estimate", () => {
+    const shared = toSharedVerdict({
+      identifiedProduct: {
+        name: "Unknown Red Cowl Neck Slip Dress",
+        brand: "Unknown",
+        category: "Dresses",
+        description: "A cowl neck slip dress at Unknown.",
+        colors: ["Red"],
+        confidence: 0.7,
+      },
+      verdict: {
+        recommendation: "skip",
+        headline: "Skip this $85 dress",
+        reasoning: "About $85 at Unknown. A $40 dupe is the better buy.",
+        worthItScore: 30,
+      },
+      lowestPrice: { retailer: "Unknown", price: 79, estimated: true, priceVerified: false },
+      prices: [{ retailer: "Unknown", price: 79 }],
+      alternatives: [
+        {
+          name: "Slip Dress",
+          brand: "Generic",
+          price: 40,
+          url: "https://www.example.com/dress",
+          reason: "Cheaper",
+          tier: "dupe",
+          matchScore: 60,
+        },
+      ],
+      reviewSummary: {
+        overallRating: 0,
+        totalReviews: 0,
+        summary: "",
+        pros: [],
+        cons: [],
+        qualityScore: 0,
+        valueScore: 0,
+      },
+      secondhand: { available: false, platforms: [] },
+      salePrediction: { likelihood: "low", predictedDrop: "Unknown", estimatedSalePrice: 60, reasoning: "" },
+    });
+    assert.ok(shared);
+    assert.equal(shared.product.brand, "");
+    assert.equal(shared.product.name, "Red Cowl Neck Slip Dress");
+    assert.equal(shared.lowestPrice.retailer, "");
+    assert.equal(shared.lowestPrice.estimated, true);
+    assert.equal(shared.lowestPrice.priceVerified, false);
+    assert.equal(shared.verdict.headline.includes("$85"), false);
+    assert.match(shared.verdict.headline, /\$79\.00/);
+    assert.equal(shared.verdict.reasoning.toLowerCase().includes("unknown"), false);
+    assert.match(shared.verdict.reasoning, /\$40/);
+    assert.equal(shared.alternatives[0]?.brand, "");
+    assert.equal(shared.saleNote, undefined);
+    const meta = sharedVerdictMetadataCopy(shared);
+    assert.match(meta.title, /Red Cowl Neck Slip Dress/);
+    assert.equal(meta.title.includes("Unknown"), false);
+    assert.match(meta.description, /Estimated price about \$79\.00/);
+    assert.equal(meta.description.toLowerCase().includes("unknown"), false);
+    assert.equal(meta.description.includes(" at "), false);
   });
 
   it("writes preview metadata from the public verdict only", () => {

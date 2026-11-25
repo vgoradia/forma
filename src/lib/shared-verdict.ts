@@ -1,4 +1,12 @@
 import type { ProductAnalysis } from "./types";
+import { alignVerdictCopy } from "./price-estimates";
+import {
+  formatAtRetailer,
+  isPlaceholderLabel,
+  sanitizeLabel,
+  sanitizeProductName,
+  stripPlaceholderMentions,
+} from "./product-label";
 import { coercePrice, formatPrice, formatProductTitle } from "./utils";
 
 /** Hostname check used while sanitizing a public URL. The server passes `isBlockedHostname`. */
@@ -130,7 +138,11 @@ export function sharedVerdictMetadataCopy(verdict: SharedVerdict): { title: stri
     verdict.lowestPrice.priceVerified && !verdict.lowestPrice.estimated
       ? `Lowest price ${price}`
       : `Estimated price about ${price}`;
-  const description = clip(`${headline}. ${pricePhrase} at ${verdict.lowestPrice.retailer}.`, 200);
+  const atRetailer = formatAtRetailer(verdict.lowestPrice.retailer);
+  const description = clip(
+    `${headline}. ${pricePhrase}${atRetailer ? ` ${atRetailer}` : ""}.`,
+    200
+  );
   return { title, description };
 }
 
@@ -194,8 +206,8 @@ export function toSharedVerdict(
   const recommendation = verdictRecord.recommendation;
   if (!isRecommendation(recommendation)) return null;
 
-  const name = scrubText(productRecord.name, 120);
-  const brand = scrubText(productRecord.brand, 80);
+  const name = sanitizeProductName(scrubText(productRecord.name, 120));
+  const brand = sanitizeLabel(scrubText(productRecord.brand, 80));
   if (!name && !brand) return null;
 
   const lowest = readPriceRow(input.lowestPrice, isHostBlocked);
@@ -217,23 +229,35 @@ export function toSharedVerdict(
       : {};
 
   const saleNote = readSaleNote(input);
-  const headline =
-    scrubText(verdictRecord.headline, 180) || `Forma says ${verdictSharePhrase(recommendation)}`;
+  const alternatives = readAlternatives(input.alternatives, isHostBlocked);
+  const secondhand = readSecondhand(input.secondhand, isHostBlocked);
+  const aligned = alignVerdictCopy(
+    scrubText(verdictRecord.headline, 180) || `Forma says ${verdictSharePhrase(recommendation)}`,
+    scrubText(verdictRecord.reasoning, 500),
+    {
+      displayed: lowest.price,
+      shown: [lowest.price, ...priceRows.map((price) => price.price)],
+      preserve: [
+        ...alternatives.map((alt) => alt.price),
+        ...secondhand.map((platform) => platform.price),
+      ],
+    }
+  );
 
   const verdict: SharedVerdict = {
     product: {
       name,
       brand,
       category: scrubText(productRecord.category, 60),
-      description: scrubText(productRecord.description, 400),
+      description: stripPlaceholderMentions(scrubText(productRecord.description, 400)),
       colors: scrubList(productRecord.colors, 4, 40),
       ...(imageUrl ? { imageUrl } : {}),
       matchPercent: readMatchPercent(productRecord),
     },
     verdict: {
       recommendation,
-      headline,
-      reasoning: scrubText(verdictRecord.reasoning, 500),
+      headline: aligned.headline,
+      reasoning: aligned.reasoning,
       worthItScore: clampScore(verdictRecord.worthItScore),
     },
     lowestPrice: {
@@ -242,7 +266,7 @@ export function toSharedVerdict(
       estimated: lowestVerified ? false : lowest.estimated,
     },
     prices: priceRows.slice(0, 4),
-    alternatives: readAlternatives(input.alternatives, isHostBlocked),
+    alternatives,
     reviews: {
       overallRating: clampRating(reviewsRecord.overallRating),
       totalReviews: clampCount(reviewsRecord.totalReviews),
@@ -252,7 +276,7 @@ export function toSharedVerdict(
       qualityScore: clampScore(reviewsRecord.qualityScore),
       valueScore: clampScore(reviewsRecord.valueScore),
     },
-    secondhand: readSecondhand(input.secondhand, isHostBlocked),
+    secondhand,
     ...(saleNote ? { saleNote } : {}),
   };
 
@@ -310,13 +334,15 @@ export function sanitizePublicUrl(value: unknown, isHostBlocked: HostBlocker = b
 }
 
 function readSaleNote(record: Record<string, unknown>): string | undefined {
-  if (typeof record.saleNote === "string") {
-    return scrubText(record.saleNote, 140) || undefined;
-  }
-  const prediction = record.salePrediction;
-  if (!isRecord(prediction)) return undefined;
-  if (prediction.likelihood !== "high" && prediction.likelihood !== "medium") return undefined;
-  return scrubText(prediction.predictedDrop, 140) || undefined;
+  const raw = typeof record.saleNote === "string"
+    ? record.saleNote
+    : isRecord(record.salePrediction) &&
+        (record.salePrediction.likelihood === "high" || record.salePrediction.likelihood === "medium")
+      ? record.salePrediction.predictedDrop
+      : "";
+  const note = scrubText(raw, 140);
+  if (!note || isPlaceholderLabel(note)) return undefined;
+  return note;
 }
 
 function readMatchPercent(product: Record<string, unknown>): number {
@@ -342,9 +368,9 @@ function readEstimated(row: Record<string, unknown>): boolean {
 
 function readPriceRow(value: unknown, isHostBlocked: HostBlocker): SharedPrice | null {
   if (!isRecord(value)) return null;
-  const retailer = scrubText(value.retailer, 80);
+  const retailer = sanitizeLabel(scrubText(value.retailer, 80));
   const price = coercePrice(value.price);
-  if (!retailer || price === undefined) return null;
+  if (price === undefined) return null;
   return {
     retailer,
     price,
@@ -358,8 +384,8 @@ function readAlternatives(value: unknown, isHostBlocked: HostBlocker): SharedAlt
   const alternatives: SharedAlternative[] = [];
   for (const item of value) {
     if (!isRecord(item)) continue;
-    const name = scrubText(item.name, 120);
-    const brand = scrubText(item.brand, 80);
+    const name = sanitizeProductName(scrubText(item.name, 120));
+    const brand = sanitizeLabel(scrubText(item.brand, 80));
     const price = coercePrice(item.price);
     if ((!name && !brand) || price === undefined) continue;
     const imageUrl = sanitizePublicUrl(item.imageUrl, isHostBlocked);
