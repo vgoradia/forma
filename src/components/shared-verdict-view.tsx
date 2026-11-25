@@ -6,13 +6,15 @@ import { ProductImage } from "@/components/product-image";
 import { ProductLink } from "@/components/product-link";
 import type { SharedVerdict } from "@/lib/shared-verdict";
 import { verdictTone } from "@/lib/shared-verdict";
-import { cn, formatAtRetailer, formatPrice, formatProductTitle, sanitizeLabel, stripPlaceholderMentions } from "@/lib/utils";
+import { orderAlternatives } from "@/lib/alternatives";
+import { collapseRetailerPrices, formatRetailerPrice, resolveRetailerLabel } from "@/lib/retailer-rows";
+import { cn, formatAtRetailer, formatPrice, formatProductTitle } from "@/lib/utils";
 import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
 import { AffiliateLinkNote } from "@/components/affiliate-link-note";
 import { EmailSignupForm } from "@/components/email-signup-form";
 import { SiteFooter } from "@/components/site-footer";
 import { TrackOnMount } from "@/components/track-on-mount";
-import { PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
+import { alignVerdictCopy, PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
 
 const verdictLabel: Record<SharedVerdict["verdict"]["recommendation"], string> = {
   buy: "Buy",
@@ -37,12 +39,27 @@ const tierStyles = {
 
 export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
   const productTitle = formatProductTitle(verdict.product.brand, verdict.product.name) || "This find";
-  const atRetailer = formatAtRetailer(verdict.lowestPrice.retailer);
   const tone = verdictTone(verdict.verdict.recommendation);
   const color = verdict.product.colors[0];
   const subtitle = [color, verdict.product.category].filter(Boolean).join(" · ");
   const hasReviews = verdict.reviews.summary.length > 0 || verdict.reviews.overallRating > 0;
-  const prices = [...verdict.prices].sort((a, b) => a.price - b.price);
+  const prices = collapseRetailerPrices(verdict.prices).slice(0, 4);
+  const alternatives = orderAlternatives(verdict.alternatives, verdict.lowestPrice.price);
+  const lowestRetailer = resolveRetailerLabel(verdict.lowestPrice.retailer, verdict.lowestPrice.url);
+  const atRetailer = formatAtRetailer(lowestRetailer);
+  const alignedVerdict = alignVerdictCopy(verdict.verdict.headline, verdict.verdict.reasoning, {
+    displayed: verdict.lowestPrice.price,
+    shown: [
+      verdict.lowestPrice.price,
+      ...prices.flatMap((price) =>
+        price.priceHigh && price.priceHigh > price.price ? [price.price, price.priceHigh] : [price.price]
+      ),
+    ],
+    preserve: [
+      ...alternatives.map((alt) => alt.price),
+      ...verdict.secondhand.map((platform) => platform.price),
+    ],
+  });
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
@@ -93,7 +110,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
               <h1 className="mt-2 text-2xl font-bold text-gray-900">{productTitle}</h1>
               {subtitle && <p className="mt-1 text-sm text-forma-muted">{subtitle}</p>}
               <p className="mt-4 text-lg font-semibold text-gray-900">
-                {stripPlaceholderMentions(verdict.verdict.headline)}
+                {alignedVerdict.headline}
               </p>
               <p className="mt-3 text-base text-gray-700">
                 {verdict.lowestPrice.estimated ? "Estimated price about " : "Lowest price "}
@@ -107,11 +124,11 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
           </div>
         </article>
 
-        {verdict.verdict.reasoning && (
+        {alignedVerdict.reasoning && (
           <section className="mt-4 rounded-2xl border border-forma-border bg-white p-5">
             <h2 className="text-sm font-semibold text-gray-900">Why this verdict</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-700">
-              {stripPlaceholderMentions(verdict.verdict.reasoning)}
+              {alignedVerdict.reasoning}
             </p>
             {verdict.saleNote && (
               <div className="mt-3">
@@ -137,16 +154,19 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
             {prices.some((price) => price.estimated) && <EstimateBadge />}
           </h2>
           <ul className="mt-3 space-y-2">
-            {prices.map((price, index) => (
-              <li key={`${price.retailer}-${index}`} className="flex items-center justify-between text-sm">
-                <span className={index === 0 ? "font-medium text-gray-900" : "text-forma-muted"}>
-                  {sanitizeLabel(price.retailer)}
-                </span>
-                <span className={index === 0 ? "font-semibold text-emerald-600" : "font-medium text-gray-800"}>
-                  {price.estimated ? `about ${formatPrice(price.price)}` : formatPrice(price.price)}
-                </span>
-              </li>
-            ))}
+            {prices.map((price, index) => {
+              const figure = formatRetailerPrice(price.price, price.priceHigh);
+              return (
+                <li key={`${price.retailer}-${price.price}-${index}`} className="flex items-center justify-between text-sm">
+                  <span className={index === 0 ? "font-medium text-gray-900" : "text-forma-muted"}>
+                    {price.retailer}
+                  </span>
+                  <span className={index === 0 ? "font-semibold text-emerald-600" : "font-medium text-gray-800"}>
+                    {price.estimated ? `about ${figure}` : figure}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
           {prices.some((price) => price.estimated) && <EstimateFootnote>{PRICE_ESTIMATE_NOTE}</EstimateFootnote>}
           {verdict.lowestPrice.url && (
@@ -161,21 +181,21 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
           <AffiliateLinkNote className="mt-3" />
         </section>
 
-        {verdict.alternatives.length > 0 && (
+        {alternatives.length > 0 && (
           <section className="mt-6">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-semibold text-gray-900">Dupes and alternatives</h2>
-              {verdict.alternatives.some((alt) => alt.estimated) && (
+              {alternatives.some((alt) => alt.estimated) && (
                 <EstimateBadge note="Dupe prices are AI estimates unless a live listing verified them." />
               )}
             </div>
-            {verdict.alternatives.some((alt) => alt.estimated) && (
+            {alternatives.some((alt) => alt.estimated) && (
               <p className="mt-2 text-[11px] leading-relaxed text-forma-muted">
                 Dupe prices are AI estimates unless a live listing verified them.
               </p>
             )}
             <div className="mt-3 flex gap-3 overflow-x-auto hide-scrollbar sm:grid sm:grid-cols-2 sm:overflow-visible">
-              {verdict.alternatives.map((alt) => {
+              {alternatives.map((alt) => {
                 const altTitle = formatProductTitle(alt.brand, alt.name);
                 return (
                   <div

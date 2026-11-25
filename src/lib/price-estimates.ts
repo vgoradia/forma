@@ -69,10 +69,63 @@ function closestDistance(amount: number, targets: number[]): number {
   return best;
 }
 
-/** Close enough that "$85" and a shown "$79" are the same claim, not a different product. */
+/**
+ * Close enough to be the item's own price, including a rounded mention
+ * ("around $65" next to a $62 estimate). About ±25%, with a small floor so
+ * cheap items still snap.
+ */
 function nearDisplayed(amount: number, displayed: number): boolean {
   const delta = Math.abs(amount - displayed);
-  return delta <= Math.max(displayed * 0.15, 8);
+  return delta <= Math.max(displayed * 0.25, 8);
+}
+
+const APPROX_PRICE =
+  /(?:~|≈)\s*\$\s*\d[\d,]*(?:\.\d{1,2})?(?:\s*-?\s*ish\b)?|(?:around|about|roughly|approximately|approx\.?|nearly|close to)\s+\$\s*\d[\d,]*(?:\.\d{1,2})?(?:\s*-?\s*ish\b)?|\$\s*\d[\d,]*(?:\.\d{1,2})?\s*-?\s*ish\b|(?:around|about|roughly|approximately|approx\.?|nearly|close to)\s+\d[\d,]*(?:\.\d{1,2})?\s+dollars?\b/gi;
+
+const OTHER_OFFER =
+  /\b(?:dupes?|knock-?offs?|second[-\s]?hand|pre-?owned|resale|thrift(?:ed)?|consignment|on sale|sale price|for sale|markdown|discount(?:ed)?|depop|poshmark|thredup|therealreal|realreal|mercari|grailed|vestiaire)\b/i;
+
+const LISTED_AT_RETAILER =
+  /\b(?:lists?|listed|sells?|selling|carries|stocks)\b|\b(?:at|from|via)\s+[A-Z]/;
+
+function mentionWindow(text: string, index: number, length: number): string {
+  const before = text.slice(Math.max(0, index - 48), index);
+  let after = text.slice(index + length, Math.min(text.length, index + length + 32));
+  const nextBreak = after.search(/\$\s?\d|\d[\d,]*\s+dollars?\b|~\s*\$|,|;|\b(?:though|but|while|whereas)\b/i);
+  if (nextBreak >= 0) after = after.slice(0, nextBreak);
+  return `${before} ${after}`;
+}
+
+function amountsIn(text: string): number[] {
+  const amounts: number[] = [];
+  const pattern =
+    /(?:~|≈)\s*\$\s*\d[\d,]*(?:\.\d{1,2})?|\$\s*\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s+dollars?\b/gi;
+  for (const part of text.matchAll(pattern)) {
+    const value = coercePrice(part[0]);
+    if (value !== undefined) amounts.push(value);
+  }
+  return amounts;
+}
+
+function shouldRewriteApproximate(
+  amount: number,
+  displayed: number,
+  shown: number[],
+  preserve: number[],
+  window: string,
+  onlyProductMention: boolean
+): boolean {
+  if (!Number.isFinite(displayed) || displayed <= 0) return false;
+  if (samePrice(amount, displayed)) return false;
+  if (matchesAny(amount, preserve)) return false;
+  const distDisplayed = Math.abs(amount - displayed);
+  const distPreserve = closestDistance(amount, preserve);
+  if (distPreserve + 0.5 < distDisplayed) return false;
+  if (OTHER_OFFER.test(window)) return false;
+  const otherShown = shown.filter((price) => !samePrice(price, displayed));
+  if (matchesAny(amount, otherShown) && LISTED_AT_RETAILER.test(window)) return false;
+  if (nearDisplayed(amount, displayed)) return true;
+  return onlyProductMention;
 }
 
 function dollarsIn(match: string): number[] {
@@ -106,9 +159,10 @@ function shouldRewriteAmount(
  * Does not change whether that price is labeled an AI estimate or a verified listing.
  */
 export function alignVerdictPriceText(text: string, context: VerdictPriceContext): string {
-  if (!text || !text.includes("$")) return text;
+  if (!text) return text;
   const displayed = context.displayed;
   if (!Number.isFinite(displayed) || displayed <= 0) return text;
+  if (!text.includes("$") && !/\bdollars?\b/i.test(text)) return text;
 
   const shown = positivePrices(context.shown);
   const preserve = positivePrices(context.preserve);
@@ -121,13 +175,14 @@ export function alignVerdictPriceText(text: string, context: VerdictPriceContext
   const formattedRange =
     high - low >= 0.5 ? `${formatPrice(low)}–${formatPrice(high)}` : formattedDisplayed;
 
-  const productAmounts = dollarsIn(text).filter((amount) => {
+  const productAmounts = amountsIn(text).filter((amount) => {
     if (matchesAny(amount, preserve)) return false;
     return closestDistance(amount, preserve) + 0.5 >= Math.abs(amount - displayed);
   });
   const onlyProductMention = productAmounts.length === 1;
 
   const rangePattern = new RegExp(DOLLAR_RANGE.source, DOLLAR_RANGE.flags);
+  const approxPattern = new RegExp(APPROX_PRICE.source, APPROX_PRICE.flags);
   const tokenPattern = new RegExp(DOLLAR_TOKEN.source, DOLLAR_TOKEN.flags);
 
   const withRanges = text.replace(rangePattern, (match) => {
@@ -145,9 +200,20 @@ export function alignVerdictPriceText(text: string, context: VerdictPriceContext
     return formattedRange;
   });
 
-  return withRanges.replace(tokenPattern, (match) => {
+  const withApproximate = withRanges.replace(approxPattern, (match, offset: number, source: string) => {
     const amount = coercePrice(match);
     if (amount === undefined) return match;
+    const window = mentionWindow(source, offset, match.length);
+    if (!shouldRewriteApproximate(amount, displayed, shownDistinct, preserve, window, onlyProductMention)) {
+      return match;
+    }
+    return formattedDisplayed;
+  });
+
+  return withApproximate.replace(tokenPattern, (match, offset: number, source: string) => {
+    const amount = coercePrice(match);
+    if (amount === undefined) return match;
+    if (OTHER_OFFER.test(mentionWindow(source, offset, match.length))) return match;
     if (!shouldRewriteAmount(amount, displayed, shownDistinct, preserve, onlyProductMention)) return match;
     return formattedDisplayed;
   });

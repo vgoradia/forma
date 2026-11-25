@@ -1,3 +1,4 @@
+import { orderAlternatives } from "./alternatives";
 import type { StoredScan } from "./storage";
 import type { ProductAnalysis } from "./types";
 import { getAnalysisHeroImage } from "./product-images";
@@ -81,7 +82,7 @@ export function getRecommendedFromScans(scans: StoredScan[]) {
   }[] = [];
 
   for (const scan of scans) {
-    for (const alt of scan.analysis.alternatives.slice(0, 2)) {
+    for (const alt of orderAlternatives(scan.analysis.alternatives, scan.analysis.lowestPrice?.price ?? 0).slice(0, 2)) {
       items.push({
         id: `${scan.id}-${alt.brand}-${alt.name}`,
         name: formatProductTitle(alt.brand, alt.name),

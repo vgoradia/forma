@@ -15,6 +15,7 @@ Analyze the input and return ONLY valid JSON (no markdown) matching this schema:
   "secondhand": { "available", "platforms": [{ "name", "price", "url", "estimated": true }] }
 }
 Keep text concise. colors, materials, and style must be JSON arrays of strings. Include 3 alternatives and 3-4 prices.
+When a plausible cheaper option exists, include at least one alternative priced below this item and set its tier to "dupe". Do not use tier "dupe" for anything that costs more than the item. Put cheaper alternatives before premium ones.
 Put the brand in "brand" only — "name" must NOT repeat the brand (e.g. brand: "Nike", name: "Air Force 1 Low", not "Nike Air Force 1 Low").
 If you cannot identify the brand, set "brand" to null. If you cannot identify a retailer, set that "retailer" to null. The same applies to alternative brands. Never write "Unknown", "N/A", "NA", "null", "Generic", or "unbranded" as a brand, retailer, or product name, and never write "at Unknown".
 "name" must not start with a placeholder. Use "Red Cowl Neck Slip Dress", not "Unknown Red Cowl Neck Slip Dress".

@@ -108,7 +108,7 @@ describe("stored scans hide placeholder brands and keep the shown price", () => 
     assert.equal(clean.identifiedProduct.name, "Red Cowl Neck Slip Dress");
     assert.equal(formatProductTitle(clean.identifiedProduct.brand, clean.identifiedProduct.name), "Red Cowl Neck Slip Dress");
     assert.equal(clean.identifiedProduct.description.toLowerCase().includes("unknown"), false);
-    assert.equal(clean.lowestPrice.retailer, "");
+    assert.equal(clean.lowestPrice.retailer, "Shopbop");
     assert.equal(clean.lowestPrice.price, 79);
     assert.equal(clean.lowestPrice.estimated, true);
     assert.equal(clean.lowestPrice.priceVerified, false);

@@ -1,6 +1,8 @@
 export interface RetailerPrice {
   retailer: string;
   price: number;
+  /** Set when several quotes from the same retailer were collapsed into one row. */
+  priceHigh?: number;
   url: string;
   inStock: boolean;
   shipping?: string;

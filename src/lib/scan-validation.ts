@@ -4,8 +4,10 @@ import {
   finalizeRetailerUrl,
   resolveSecondhandUrl,
 } from "./product-links";
+import { orderAlternatives } from "./alternatives";
 import { isPlaceholderLabel, sanitizeLabel, sanitizeProductName, stripPlaceholderMentions } from "./product-label";
 import { alignVerdictCopy, normalizePriceTrend, syncEstimateFlag } from "./price-estimates";
+import { collapseRetailerPrices, resolveRetailerLabel } from "./retailer-rows";
 import { stripDuplicateBrand } from "./utils";
 
 function hasObject(value: unknown): value is Record<string, unknown> {
@@ -55,7 +57,7 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
   const brand = sanitizeLabel(analysis.identifiedProduct.brand);
   const name = stripDuplicateBrand(brand, sanitizeProductName(analysis.identifiedProduct.name));
 
-  const lowestRetailer = sanitizeLabel(analysis.lowestPrice?.retailer);
+  const lowestRetailer = resolveRetailerLabel(analysis.lowestPrice?.retailer, analysis.lowestPrice?.url);
   const lowestPrice = analysis.lowestPrice
     ? syncEstimateFlag({
         ...analysis.lowestPrice,
@@ -67,16 +69,19 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
   const priceTrend = normalizePriceTrend(analysis.priceTrend);
   const prediction = analysis.salePrediction;
 
-  const prices = Array.isArray(analysis.prices)
-    ? analysis.prices.map((price) => {
-        const retailer = sanitizeLabel(price.retailer);
-        return syncEstimateFlag({
+  const prices = collapseRetailerPrices(
+    (Array.isArray(analysis.prices) ? analysis.prices : []).flatMap((price) => {
+      const retailer = resolveRetailerLabel(price.retailer, price.url);
+      if (!retailer) return [];
+      return [
+        syncEstimateFlag({
           ...price,
           retailer,
           url: finalizeRetailerUrl(price.url, retailer, brand, name),
-        });
-      })
-    : [];
+        }),
+      ];
+    })
+  );
 
   const alternatives = Array.isArray(analysis.alternatives)
     ? analysis.alternatives.map((alt) => {
@@ -98,11 +103,18 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
     estimated: true,
   }));
 
+  const orderedAlternatives = orderAlternatives(alternatives, lowestPrice?.price ?? 0);
+  const shownPrices = [
+    lowestPrice?.price ?? 0,
+    ...prices.flatMap((price) =>
+      price.priceHigh && price.priceHigh > price.price ? [price.price, price.priceHigh] : [price.price]
+    ),
+  ];
   const verdict = alignVerdictCopy(analysis.verdict?.headline ?? "", analysis.verdict?.reasoning ?? "", {
     displayed: lowestPrice?.price ?? 0,
-    shown: [lowestPrice?.price ?? 0, ...prices.map((price) => price.price)],
+    shown: shownPrices,
     preserve: [
-      ...alternatives.map((alt) => alt.price),
+      ...orderedAlternatives.map((alt) => alt.price),
       ...secondhandPlatforms.map((platform) => platform.price),
       prediction?.estimatedSalePrice ?? 0,
     ],
@@ -127,7 +139,7 @@ export function sanitizeProductAnalysis(analysis: ProductAnalysis): ProductAnaly
     },
     lowestPrice,
     prices,
-    alternatives,
+    alternatives: orderedAlternatives,
     secondhand: {
       available: analysis.secondhand?.available ?? false,
       platforms: secondhandPlatforms,
