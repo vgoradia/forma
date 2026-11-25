@@ -27,6 +27,7 @@ export function EmailSignupForm({ source, className }: { source: string; classNa
       const data = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
         alreadySubscribed?: boolean;
+        message?: string;
         error?: string;
       };
 
@@ -42,7 +43,10 @@ export function EmailSignupForm({ source, className }: { source: string; classNa
         trackEvent("email_signup", { source });
       }
       setEmail("");
-      setStatus({ tone: "ok", text: "You're on the list." });
+      setStatus({
+        tone: "ok",
+        text: data.alreadySubscribed ? data.message || "You're already subscribed." : "You're on the list.",
+      });
     } catch {
       setStatus({ tone: "error", text: "We couldn't save that email. Please try again." });
     } finally {

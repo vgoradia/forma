@@ -56,8 +56,8 @@ describe("POST /api/email-signup", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
-  it("stores a lowercased email and asks Postgres to rate-limit the request", async () => {
-    const response = await POST(request({ email: "Person@Example.com", source: "Landing page!" }));
+  it("trims and lowercases before insert so the lowercase check constraint passes", async () => {
+    const response = await POST(request({ email: "  Person@Example.com  ", source: "landing" }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true });
@@ -69,18 +69,29 @@ describe("POST /api/email-signup", () => {
     expect(emailCall?.[1].p_key).not.toContain("person@example.com");
     expect(mocks.insert).toHaveBeenCalledWith({
       email: "person@example.com",
-      source: "landingpage",
+      source: "landing",
       user_agent: "FormaTest",
     });
+    const stored = mocks.insert.mock.calls[0]?.[0] as { email: string };
+    expect(stored.email).toBe(stored.email.trim().toLowerCase());
   });
 
-  it("treats a duplicate email as already subscribed", async () => {
-    mocks.insert.mockResolvedValue({ error: { code: "23505", message: "duplicate key value" } });
+  it("maps a unique violation to an already-subscribed success", async () => {
+    mocks.insert.mockResolvedValue({
+      error: { code: "23505", message: 'duplicate key value violates unique constraint "email_signups_email_unique"' },
+    });
 
-    const response = await POST(request({ email: "person@example.com", source: "scan" }));
+    const response = await POST(request({ email: "  Person@Example.com  ", source: "scan" }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, alreadySubscribed: true });
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      alreadySubscribed: true,
+      message: "You're already subscribed.",
+    });
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "person@example.com" })
+    );
   });
 
   it("returns a friendly error when the table is missing", async () => {

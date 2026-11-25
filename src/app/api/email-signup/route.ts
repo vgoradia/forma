@@ -70,7 +70,11 @@ export async function POST(request: Request) {
     }
 
     if (isDuplicateSignup(error)) {
-      return NextResponse.json({ ok: true, alreadySubscribed: true });
+      return NextResponse.json({
+        ok: true,
+        alreadySubscribed: true,
+        message: "You're already subscribed.",
+      });
     }
 
     if (isMissingEmailSignupsTable(error)) {
