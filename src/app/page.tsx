@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { getDisplayImageSrc } from "@/lib/image-proxy";
 import { LogoWordmark, LogoMark } from "@/components/logo";
+import { SiteFooter } from "@/components/site-footer";
 import { getAppUrl } from "@/lib/app-url";
 import {
   Camera,
   Tag,
   Share2,
-  Shield,
   ArrowRight,
   CheckCircle2,
   Users,
@@ -275,45 +275,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-forma-border bg-white px-5 py-8 sm:px-8">
-          <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
-            <div className="flex items-center gap-2">
-              <LogoWordmark size="sm" />
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-forma-muted">
-              <Link href="/about" className="hover:text-gray-900">
-                About
-              </Link>
-              <Link href="/privacy" className="hover:text-gray-900">
-                Privacy
-              </Link>
-              <Link href="/terms" className="hover:text-gray-900">
-                Terms
-              </Link>
-              <Link href="/analysis/demo" className="hover:text-gray-900">
-                Demo
-              </Link>
-              <a
-                href="https://github.com/vgoradia/forma"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-gray-900"
-              >
-                GitHub
-              </a>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm text-forma-muted">
-                Private by design — scans stored locally
-              </span>
-            </div>
-          </div>
-          <p className="mx-auto mt-4 max-w-6xl text-center text-xs text-forma-muted">
-            © 2026 Forma · Built by Veer Goradia
-          </p>
-        </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

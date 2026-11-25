@@ -8,6 +8,8 @@ import type { SharedVerdict } from "@/lib/shared-verdict";
 import { verdictTone } from "@/lib/shared-verdict";
 import { cn, formatPrice, formatProductTitle } from "@/lib/utils";
 import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
+import { AffiliateLinkNote } from "@/components/affiliate-link-note";
+import { SiteFooter } from "@/components/site-footer";
 import { PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
 
 const verdictLabel: Record<SharedVerdict["verdict"]["recommendation"], string> = {
@@ -40,7 +42,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
   const prices = [...verdict.prices].sort((a, b) => a.price - b.price);
 
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
+    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <header className="border-b border-forma-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/">
@@ -55,7 +57,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 sm:py-12">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8 sm:py-12">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">Shared verdict</p>
 
         <article className="mt-3 overflow-hidden rounded-3xl border border-forma-border bg-white shadow-sm">
@@ -147,6 +149,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
               <ExternalLink className="h-3.5 w-3.5" />
             </ProductLink>
           )}
+          <AffiliateLinkNote className="mt-3" />
         </section>
 
         {verdict.alternatives.length > 0 && (
@@ -196,6 +199,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
                 );
               })}
             </div>
+            <AffiliateLinkNote className="mt-3" />
           </section>
         )}
 
@@ -261,6 +265,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
                 </li>
               ))}
             </ul>
+            <AffiliateLinkNote className="mt-3" />
           </section>
         )}
 
@@ -288,6 +293,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

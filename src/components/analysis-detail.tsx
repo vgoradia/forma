@@ -30,6 +30,7 @@ import { getPrefs, isBookmarked, toggleBookmark } from "@/lib/storage";
 import { subscribeStorage } from "@/lib/storage-events";
 import { trackEvent } from "@/lib/analytics";
 import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
+import { AffiliateLinkNote } from "@/components/affiliate-link-note";
 import { requestPublicShare } from "@/lib/shared-verdict";
 import { getVerdictSharePayload } from "@/lib/share-url";
 
@@ -332,6 +333,7 @@ export function AnalysisDetail({
             View product
             <ExternalLink className="h-3.5 w-3.5" />
           </ProductLink>
+          <AffiliateLinkNote className="mt-2" />
         </Card>
 
         <Card title="AI review summary">
@@ -409,6 +411,7 @@ export function AnalysisDetail({
             );
           })}
         </div>
+        {analysis.alternatives.length > 0 && <AffiliateLinkNote className="mt-3" />}
       </section>
 
       {analysis.secondhand.available && analysis.secondhand.platforms.length > 0 && (
@@ -442,6 +445,7 @@ export function AnalysisDetail({
                 </div>
               ))}
             </div>
+            <AffiliateLinkNote className="mt-3" />
           </Card>
         </section>
       )}

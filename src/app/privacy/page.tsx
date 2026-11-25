@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogoWordmark } from "@/components/logo";
+import { LegalPage, LegalSection } from "@/components/legal-page";
+import { CONTACT_EMAIL, OPERATOR_NAME } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Forma",
@@ -9,90 +10,142 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
-      <header className="border-b border-forma-border bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
-          <Link href="/">
-            <LogoWordmark size="md" />
+    <LegalPage title="Privacy Policy" updated="Last updated: November 2026">
+      <LegalSection title="Summary">
+        <p>
+          {OPERATOR_NAME} operates Forma at shopwithforma.com (&quot;we&quot;, &quot;us&quot;). We collect what we need
+          to run product scans, accounts, and Forma Plus. We do not sell or share personal information.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="What we collect">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            <strong>Scans.</strong> Images, links, or text you submit. Guest scan history stays in your browser until
+            you sign in or clear it.
+          </li>
+          <li>
+            <strong>Account.</strong> If you sign in with Google, we receive your name, email, and profile photo.
+          </li>
+          <li>
+            <strong>Payments.</strong> If you buy Forma Plus, our payment processor receives your email and payment
+            details. We do not store your card number. We store whether your plan is free or Plus.
+          </li>
+          <li>
+            <strong>Shared verdicts.</strong> If you tap Share verdict, we store a public copy of that product verdict
+            (name, prices, recommendation, and retailer links). That copy does not include your account, email, user
+            id, or uploaded screenshot.
+          </li>
+          <li>
+            <strong>Usage.</strong> Page views and product events, such as a scan or a click on a retailer link.
+          </li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection title="Who processes data">
+        <p>These companies process data to run Forma:</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            <strong>Supabase</strong> — auth and database. Accounts, signed-in scans, and shared verdicts.
+          </li>
+          <li>
+            <strong>Stripe</strong> — payments for Forma Plus.
+          </li>
+          <li>
+            <strong>Anthropic and OpenAI</strong> — scan analysis. They receive the image, link, or text you submit so
+            they can identify the product and write the verdict.
+          </li>
+          <li>
+            <strong>Serper</strong> — product search. Queries used to look up retailer listings, prices, and images.
+          </li>
+          <li>
+            <strong>Vercel</strong> — hosting and analytics.
+          </li>
+          <li>
+            <strong>Sentry</strong> — error monitoring, if enabled.
+          </li>
+          <li>
+            <strong>PostHog</strong> — product analytics, if enabled.
+          </li>
+          <li>
+            <strong>An email list</strong> — optional product updates, if enabled. We only add an address when someone
+            opts in.
+          </li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection title="How we use data">
+        <p>
+          We use data to identify products, return prices and verdicts, sign you in, bill Forma Plus, keep the site
+          working, and prevent abuse. We do not use your scans to advertise other people&apos;s products to you.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Cookies and local storage">
+        <p>
+          Sign-in uses cookies. Supabase Auth sets a session cookie so you stay signed in. Vercel Analytics may set a
+          cookie to count visits. If Sentry or PostHog is enabled, those tools may set their own cookies.
+        </p>
+        <p>
+          We use local storage on your device for guest scans, bookmarks, preferences (including email-update and
+          sale-estimate toggles), onboarding, and the free monthly scan count. Clearing site data in your browser
+          removes that guest history from the device.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="How long we keep data">
+        <p>
+          Guest scans stay in local storage until you delete them or clear the browser. Signed-in scans and your
+          account stay in our database until you delete the scan history or ask us to delete the account. Shared
+          verdict links stay public until we remove them. Stripe keeps payment records as needed for billing, taxes,
+          and disputes. Analytics and error logs, when those tools are enabled, follow that provider&apos;s retention.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Deleting your account">
+        <p>
+          Email{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-forma-primary">
+            {CONTACT_EMAIL}
+          </a>{" "}
+          and ask us to delete your account. We delete the account and the personal information we hold for it within
+          30 days, except records we must keep for legal, tax, or security reasons.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="We do not sell or share personal information">
+        <p>
+          We do not sell or share personal information. That includes the CCPA meanings of &quot;sell&quot; and
+          &quot;share&quot;: we do not sell personal information for money, and we do not share it for cross-context
+          behavioral advertising.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Children">
+        <p>
+          Forma is not for children under 13. We do not create accounts for children under 13. If you believe a child
+          under 13 has an account, email us and we will delete it.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Affiliate links">
+        <p>
+          Some outbound retailer links are affiliate links. See the{" "}
+          <Link href="/affiliate-disclosure" className="text-forma-primary">
+            affiliate disclosure
           </Link>
-          <Link href="/scan" className="text-sm font-semibold text-forma-primary">
-            Scan
-          </Link>
-        </div>
-      </header>
+          . A commission does not change your price.
+        </p>
+      </LegalSection>
 
-      <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8">
-        <h1 className="text-2xl font-bold text-gray-900">Privacy Policy</h1>
-        <p className="text-sm text-forma-muted">Last updated: November 2026</p>
-
-        <div className="mt-8 space-y-6 text-sm leading-relaxed text-gray-700">
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">Summary</h2>
-            <p>
-              Forma (&quot;we&quot;, &quot;us&quot;) operates shopwithforma.com. We collect only what we need to run
-              product scans, accounts, and subscriptions. We do not sell your personal information.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">What we collect</h2>
-            <ul className="list-disc space-y-1 pl-5">
-              <li>
-                <strong>Scans:</strong> Images, links, or text you submit for analysis. Guest scan history is stored in
-                your browser (localStorage) unless you sign in.
-              </li>
-              <li>
-                <strong>Account:</strong> If you sign in with Google, we receive your name, email, and profile photo from
-                Supabase Auth.
-              </li>
-              <li>
-                <strong>Payments:</strong> Stripe processes Forma Plus payments. We do not store card numbers.
-              </li>
-              <li>
-                <strong>Usage:</strong> Anonymous analytics (e.g. page views, scan and share events) via Vercel Analytics.
-              </li>
-              <li>
-                <strong>Shared verdicts:</strong> If you tap Share verdict, we store a public copy of that product
-                verdict (name, prices, recommendation, and retailer links) so the link works for anyone. That copy does
-                not include your account, email, user id, or uploaded screenshot.
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">How we use data</h2>
-            <p>
-              To identify products, return prices and verdicts, authenticate users, bill Forma Plus, improve the product,
-              and prevent abuse. AI providers (e.g. Anthropic) process scan content only to generate your analysis.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">Affiliate links</h2>
-            <p>
-              Outbound retailer links may include affiliate parameters. We may earn a commission if you purchase; this does
-              not change your price.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">Your choices</h2>
-            <p>
-              Clear scan data in Profile, sign out, or delete your browser storage. For account deletion, email us (below).
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-base font-semibold text-gray-900">Contact</h2>
-            <p>
-              Questions:{" "}
-              <a href="mailto:contact@shopwithforma.com" className="text-forma-primary">
-                contact@shopwithforma.com
-              </a>
-            </p>
-          </section>
-        </div>
-      </main>
-    </div>
+      <LegalSection title="Contact">
+        <p>
+          Privacy questions:{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-forma-primary">
+            {CONTACT_EMAIL}
+          </a>
+        </p>
+      </LegalSection>
+    </LegalPage>
   );
 }
