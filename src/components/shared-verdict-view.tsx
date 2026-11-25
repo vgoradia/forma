@@ -9,7 +9,9 @@ import { verdictTone } from "@/lib/shared-verdict";
 import { cn, formatPrice, formatProductTitle } from "@/lib/utils";
 import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
 import { AffiliateLinkNote } from "@/components/affiliate-link-note";
+import { EmailSignupForm } from "@/components/email-signup-form";
 import { SiteFooter } from "@/components/site-footer";
+import { TrackOnMount } from "@/components/track-on-mount";
 import { PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
 
 const verdictLabel: Record<SharedVerdict["verdict"]["recommendation"], string> = {
@@ -43,6 +45,7 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
+      <TrackOnMount name="verdict_viewed" source="share" />
       <header className="border-b border-forma-border bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/">
@@ -292,6 +295,8 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
             </Link>
           </div>
         </section>
+
+        <EmailSignupForm source="verdict" className="mt-8" />
       </main>
       <SiteFooter />
     </div>

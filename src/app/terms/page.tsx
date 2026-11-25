@@ -3,11 +3,13 @@ import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 import { CONTACT_EMAIL, GOVERNING_LAW, OPERATOR_NAME } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: "/terms",
   title: "Terms of Service — Forma",
   description: "Terms for using Forma.",
-};
+});
 
 export default function TermsPage() {
   const plusPrice = getFormaPlusPriceLabel();

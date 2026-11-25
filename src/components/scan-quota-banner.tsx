@@ -4,6 +4,7 @@ import Link from "next/link";
 import { GoogleSignInButton } from "@/components/auth-ui";
 import { useScanQuota } from "@/hooks/use-scan-quota";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
+import { trackEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 export function ScanQuotaBanner({
@@ -53,6 +54,7 @@ export function ScanQuotaBanner({
         showUpgradeLink && (
           <Link
             href="/profile"
+            onClick={() => trackEvent("upgrade_clicked", { source: "quota_banner" })}
             className="mt-2 inline-block text-xs font-semibold text-forma-primary hover:underline"
           >
             {atLimit ? "Get Forma Plus" : "Go unlimited with Forma Plus →"}

@@ -5,6 +5,7 @@ import { stripeCustomerId, subscriptionIdFromInvoice } from "@/lib/stripe/custom
 import { getStripeWebhookSecret, isStripeConfigured } from "@/lib/stripe/config";
 import { getStripe } from "@/lib/stripe/server";
 import { findUserIdByEmail, setUserPlan } from "@/lib/supabase/admin";
+import { captureServerEvent } from "@/lib/analytics-server";
 
 export const runtime = "nodejs";
 
@@ -54,10 +55,16 @@ async function handleStripeEvent(stripe: Stripe, event: Stripe.Event): Promise<b
       if (!userId || session.mode !== "subscription") return true;
 
       const customerId = stripeCustomerId(session.customer);
-      if (customerId) {
-        return setUserPlan(userId, "plus", { stripeCustomerId: customerId });
+      const saved = customerId
+        ? await setUserPlan(userId, "plus", { stripeCustomerId: customerId })
+        : await setUserPlan(userId, "plus");
+      if (saved) {
+        await captureServerEvent("plus_subscribed", userId, {
+          source: "stripe_webhook",
+          ...(event.id ? { $insert_id: `plus_subscribed:${event.id}` } : {}),
+        });
       }
-      return setUserPlan(userId, "plus");
+      return saved;
     }
     case "customer.subscription.created":
     case "customer.subscription.updated":

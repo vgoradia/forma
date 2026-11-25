@@ -42,6 +42,11 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Forma",
   },
+  appleWebApp: {
+    capable: true,
+    title: "Forma",
+    statusBarStyle: "black-translucent",
+  },
   twitter: {
     card: "summary_large_image",
     title: "Forma — Buy or skip before you checkout",
@@ -52,7 +57,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   themeColor: "#1A1B26",
 };
 

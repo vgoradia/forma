@@ -16,6 +16,10 @@ export function useFormaPlusCheckout() {
   const startCheckout = useCallback(async () => {
     if (loading || pending) return;
 
+    if (plan !== "plus") {
+      trackEvent("upgrade_clicked", { source: "plus_cta" });
+    }
+
     if (!profile.isAuthenticated) {
       router.push("/login?next=/profile");
       return;
@@ -35,7 +39,7 @@ export function useFormaPlusCheckout() {
 
     setPending(true);
     setMessage("Redirecting to secure checkout…");
-    trackEvent("plus_checkout_started");
+    trackEvent("checkout_started");
 
     try {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });

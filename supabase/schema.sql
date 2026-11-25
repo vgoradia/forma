@@ -53,3 +53,4 @@ create policy "Users delete own scans"
 -- Public share links live in supabase/shared-verdicts.sql.
 -- Run that file too (existing projects that already applied the statements above).
 -- For scan limits and rate limits, run supabase/scan-usage.sql.
+-- For the launch email list, run supabase/email-signups.sql.

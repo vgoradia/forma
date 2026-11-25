@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LogoWordmark } from "@/components/logo";
+import { pageMetadata } from "@/lib/seo";
 import { LoginContent } from "./login-content";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: "/login",
   title: "Sign in — Forma",
   description: "Sign in to Forma with Google or continue as a guest.",
-};
+});
 
 export default function LoginPage() {
   return (

@@ -4,13 +4,15 @@ import { ArrowRight, Code2, Globe, Sparkles, Target, Users } from "lucide-react"
 import { LogoWordmark } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
 import { getAppUrl } from "@/lib/app-url";
+import { pageMetadata } from "@/lib/seo";
 import { getFormaPlusPriceLabel } from "@/lib/stripe/public-config";
 
-export const metadata: Metadata = {
-  title: "About Forma — Buy or skip before you checkout",
+export const metadata: Metadata = pageMetadata({
+  path: "/about",
+  title: "About Forma",
   description:
     "Forma is the buy-or-skip button for viral fashion. Scan a find, get prices and dupes, and a clear buy / wait / skip verdict. Built by Veer Goradia.",
-};
+});
 
 const stats = [
   { label: "Analysis time", value: "10–20 sec" },
@@ -137,7 +139,7 @@ export default function AboutPage() {
 
         <div className="mt-12 rounded-2xl bg-forma-primary px-6 py-8 text-center text-white">
           <h2 className="text-xl font-bold">Try it on something you&apos;re thinking about buying</h2>
-          <p className="mt-2 text-sm text-indigo-100">Upload a screenshot. Get your verdict in under 20 seconds.</p>
+          <p className="mt-2 text-sm text-white">Upload a screenshot. Get your verdict in under 20 seconds.</p>
           <Link
             href="/scan"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-forma-primary hover:shadow-lg"

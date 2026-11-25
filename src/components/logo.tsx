@@ -20,17 +20,19 @@ type LogoMarkProps = {
   sizePx?: number;
   className?: string;
   priority?: boolean;
+  /** Empty string when the word "Forma" is already next to the mark. */
+  alt?: string;
 };
 
 /** Icon tile — shopping bag mark on brand dark background. */
-export function LogoMark({ size = "md", sizePx, className, priority = false }: LogoMarkProps) {
+export function LogoMark({ size = "md", sizePx, className, priority = false, alt = "Forma" }: LogoMarkProps) {
   const h = sizePx ?? markHeights[size];
   return (
     // Native img avoids Next.js image dedup/optimization quirks with repeated logos.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={BRAND.icon}
-      alt="Forma"
+      alt={alt}
       width={h}
       height={h}
       decoding="async"
@@ -64,7 +66,7 @@ export function LogoWordmark({
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      <LogoMark size={size} priority={priority} />
+      <LogoMark size={size} priority={priority} alt="" />
       <div className="min-w-0">
         <p className={cn("font-bold leading-none text-gray-900", titleSizes[size])}>Forma</p>
         {showTagline ? (

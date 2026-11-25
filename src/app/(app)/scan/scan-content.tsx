@@ -74,6 +74,9 @@ export function ScanContent() {
     setError(null);
     setNeedsSignIn(false);
 
+    const source = formData.has("image") ? "upload" : formData.has("url") ? "link" : "search";
+    trackEvent("scan_started", { source });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
 
@@ -100,11 +103,6 @@ export function ScanContent() {
       }
 
       const data: ProductAnalysis = await res.json();
-      const source = formData.has("image")
-        ? "upload"
-        : formData.has("url")
-          ? "link"
-          : "search";
 
       const analysisWithPreview = meta?.imagePreview
         ? {
@@ -154,8 +152,8 @@ export function ScanContent() {
   return (
     <PageContainer narrow>
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/" className="rounded-xl p-2 text-forma-muted hover:bg-white">
-          <ArrowLeft className="h-5 w-5" />
+        <Link href="/" aria-label="Back to home" className="rounded-xl p-2 text-forma-muted hover:bg-white">
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </Link>
         <div>
           <h1 className="text-xl font-bold text-gray-900">Get your verdict</h1>

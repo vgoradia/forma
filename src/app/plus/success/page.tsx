@@ -13,7 +13,7 @@ export default function PlusSuccessPage() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    trackEvent("plus_subscribed");
+    trackEvent("plus_subscribed", { source: "success_page" });
   }, []);
 
   useEffect(() => {

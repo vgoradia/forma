@@ -30,9 +30,11 @@ import { getPrefs, isBookmarked, toggleBookmark } from "@/lib/storage";
 import { subscribeStorage } from "@/lib/storage-events";
 import { trackEvent } from "@/lib/analytics";
 import { FormaPlusAnalysisUpsell } from "@/components/forma-plus-cta";
+import { EmailSignupForm } from "@/components/email-signup-form";
 import { AffiliateLinkNote } from "@/components/affiliate-link-note";
 import { requestPublicShare } from "@/lib/shared-verdict";
 import { getVerdictSharePayload } from "@/lib/share-url";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 function Card({ title, children, className }: { title?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -78,6 +80,14 @@ export function AnalysisDetail({
   }, []);
   const [sharing, setSharing] = useState(false);
   const publishedPath = useRef<string | null>(null);
+  const profile = useUserProfile();
+
+  useEffect(() => {
+    trackEvent("verdict_viewed", {
+      recommendation: analysis.verdict.recommendation,
+      source: scanId ? "scan" : "demo",
+    });
+  }, [analysis.verdict.recommendation, scanId]);
 
   useEffect(() => {
     if (!scanId) return;
@@ -139,7 +149,7 @@ export function AnalysisDetail({
         path,
       });
 
-      trackEvent("share_analysis", { has_scan_id: Boolean(scanId) });
+      trackEvent("share_created", { has_scan_id: Boolean(scanId) });
 
       if (navigator.share) {
         try {
@@ -521,6 +531,10 @@ export function AnalysisDetail({
           </div>
         </Card>
       </div>
+
+      {scanId && !profile.loading && !profile.isAuthenticated && (
+        <EmailSignupForm source="scan" className="mb-4" />
+      )}
 
       {scanId && <FormaPlusAnalysisUpsell className="mt-6" />}
     </PageContainer>

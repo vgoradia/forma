@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LegalPage, LegalSection } from "@/components/legal-page";
 import { CONTACT_EMAIL, FOOTER_AFFILIATE_DISCLOSURE } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: "/affiliate-disclosure",
   title: "Affiliate disclosure — Forma",
   description: "How Forma earns from retailer links, and what a commission does not change.",
-};
+});
 
 export default function AffiliateDisclosurePage() {
   return (
