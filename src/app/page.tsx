@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getDisplayImageSrc } from "@/lib/image-proxy";
 import { LogoWordmark, LogoMark } from "@/components/logo";
 import { SiteFooter } from "@/components/site-footer";
+import { EmailSignupForm } from "@/components/email-signup-form";
+import { absoluteUrl } from "@/lib/seo";
 import { getAppUrl } from "@/lib/app-url";
 import {
   Camera,
@@ -45,6 +48,11 @@ const proof = [
   { icon: Users, label: "Free to start", detail: "No account required" },
   { icon: CheckCircle2, label: "Buy / Wait / Skip", detail: "Clear AI verdict" },
 ];
+
+export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl("/") },
+  openGraph: { url: absoluteUrl("/") },
+};
 
 export default function LandingPage() {
   const appUrl = getAppUrl();
@@ -172,7 +180,7 @@ export default function LandingPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={getDisplayImageSrc(DEMO_IMAGE)}
-                    alt="Reformation dress"
+                    alt=""
                     className="h-40 w-full rounded-2xl object-cover sm:col-span-2 sm:h-full sm:min-h-[220px]"
                   />
                   <div className="space-y-3 sm:col-span-3">
@@ -251,10 +259,16 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section className="px-5 pb-4 sm:px-8" aria-label="Email updates">
+          <div className="mx-auto max-w-xl">
+            <EmailSignupForm source="landing" />
+          </div>
+        </section>
+
         <section className="px-5 pb-16 sm:px-8 sm:pb-24">
           <div className="mx-auto max-w-4xl rounded-3xl bg-forma-primary px-8 py-14 text-center text-white sm:px-12">
             <h2 className="text-3xl font-bold sm:text-4xl">Buy with confidence — or skip with confidence.</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-indigo-100">
+            <p className="mx-auto mt-4 max-w-2xl text-white">
               Free every month. Scan a screenshot and share your verdict before anyone else checks out.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

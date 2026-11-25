@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { clearAllScans } from "@/lib/storage";
 
 export default function AppError({
@@ -12,6 +13,8 @@ export default function AppError({
 }) {
   useEffect(() => {
     console.error("Forma app error:", error);
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    Sentry.captureException(error);
   }, [error]);
 
   return (

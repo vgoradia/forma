@@ -127,10 +127,12 @@ export function UploadZone({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={preview} alt="Upload preview" className="max-h-[260px] rounded-2xl object-contain" />
               <button
+                type="button"
                 onClick={clearPreview}
+                aria-label="Remove image"
                 className="absolute right-4 top-4 rounded-full bg-white/90 p-2 shadow-md backdrop-blur-sm transition hover:bg-white"
               >
-                <X className="h-4 w-4 text-stone-600" />
+                <X className="h-4 w-4 text-stone-600" aria-hidden="true" />
               </button>
             </>
           ) : (
@@ -141,7 +143,7 @@ export function UploadZone({
               <p className="mb-1 text-base font-medium text-stone-800">
                 Drop a screenshot or photo
               </p>
-              <p className="mb-4 text-sm text-stone-500">
+              <p className="mb-4 text-sm text-stone-600">
                 From TikTok, Pinterest, Instagram, or anywhere
               </p>
               <label className="cursor-pointer rounded-full bg-forma-primary px-6 py-2.5 text-sm font-medium text-white transition hover:bg-forma-primary-dark">
@@ -179,9 +181,9 @@ export function UploadZone({
               }
             }}
             placeholder="https://www.nordstrom.com/s/..."
-            className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+            className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-600 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
           />
-          <p className="mt-3 text-xs text-stone-400">
+          <p className="mt-3 text-xs text-stone-600">
             Paste a link from any retailer — Amazon, Nordstrom, Zara, and more
           </p>
         </div>
@@ -201,7 +203,7 @@ export function UploadZone({
             }}
             placeholder="Oversized camel blazer from TikTok, double-breasted with relaxed fit..."
             rows={4}
-            className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+            className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3.5 text-stone-900 placeholder:text-stone-600 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
           />
         </div>
       )}

@@ -1,4 +1,27 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
+
+function analyticsConnectSources(): string {
+  const sources = [
+    "https://*.ingest.sentry.io",
+    "https://*.ingest.us.sentry.io",
+    "https://*.ingest.de.sentry.io",
+    "https://us.i.posthog.com",
+    "https://eu.i.posthog.com",
+    "https://us-assets.i.posthog.com",
+    "https://eu-assets.i.posthog.com",
+  ];
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
+  if (host) {
+    try {
+      const origin = new URL(host).origin;
+      if (origin.startsWith("https://") && !sources.includes(origin)) sources.push(origin);
+    } catch {
+      // A bad host stays out of the policy. Analytics no-ops without a valid URL.
+    }
+  }
+  return sources.join(" ");
+}
 
 function contentSecurityPolicy(): string {
   // React's dev overlay uses eval. Production bundles do not, so omit it there.
@@ -7,6 +30,7 @@ function contentSecurityPolicy(): string {
     "script-src 'self' 'unsafe-inline'",
     isDev ? "'unsafe-eval'" : "",
     "https://va.vercel-scripts.com https://*.vercel-scripts.com",
+    "https://us-assets.i.posthog.com https://eu-assets.i.posthog.com",
   ]
     .filter(Boolean)
     .join(" ");
@@ -17,7 +41,7 @@ function contentSecurityPolicy(): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://vitals.vercel-insights.com https://va.vercel-scripts.com ${analyticsConnectSources()}`,
     "frame-src https://js.stripe.com https://hooks.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
@@ -69,4 +93,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN?.trim();
+
+export default sentryAuthToken
+  ? withSentryConfig(nextConfig, {
+      authToken: sentryAuthToken,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      telemetry: false,
+      silent: !process.env.CI,
+      sourcemaps: { disable: false },
+      errorHandler(error: Error) {
+        console.warn("Sentry source map upload skipped:", error.message);
+      },
+      webpack: {
+        treeshake: {
+          removeDebugLogging: true,
+          removeTracing: true,
+        },
+      },
+    })
+  : nextConfig;
