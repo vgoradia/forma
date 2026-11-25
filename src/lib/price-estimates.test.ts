@@ -4,6 +4,7 @@ import { ANALYSIS_SYSTEM_PROMPT } from "./analysis-prompt";
 import { homeSections } from "./demo-data";
 import { generateMockAnalysis } from "./mock-analysis";
 import {
+  alignVerdictPriceText,
   asUnverifiedEstimate,
   describePriceTrend,
   flagModelPriceHistory,
@@ -147,6 +148,63 @@ describe("price trend copy", () => {
   });
 });
 
+describe("verdict price consistency", () => {
+  it("rewrites a nearby product price to the displayed estimate", () => {
+    const text = alignVerdictPriceText("Skip this $85 dress.", {
+      displayed: 79,
+      shown: [79],
+    });
+    assert.equal(text.includes("$85"), false);
+    assert.match(text, /\$79\.00/);
+  });
+
+  it("leaves a dupe price alone and still fixes the product price", () => {
+    const text = alignVerdictPriceText("The $85 dress loses to a $40 dupe.", {
+      displayed: 79,
+      shown: [79],
+      preserve: [40],
+    });
+    assert.match(text, /\$79\.00/);
+    assert.match(text, /\$40/);
+    assert.equal(text.includes("$85"), false);
+  });
+
+  it("snaps a product range to the prices actually shown", () => {
+    const text = alignVerdictPriceText("Expect $80-$90 before you buy.", {
+      displayed: 79,
+      shown: [79, 94],
+    });
+    assert.equal(text.includes("$80"), false);
+    assert.equal(text.includes("$90"), false);
+    assert.match(text, /\$79\.00–\$94\.00/);
+  });
+
+  it("keeps a price that is already on screen", () => {
+    const text = alignVerdictPriceText("Nordstrom lists it around $85.", {
+      displayed: 79,
+      shown: [79, 85],
+    });
+    assert.match(text, /\$85/);
+  });
+
+  it("is idempotent and does not invent a price when none is shown", () => {
+    const once = alignVerdictPriceText("Skip this $85 dress.", { displayed: 79, shown: [79] });
+    const twice = alignVerdictPriceText(once, { displayed: 79, shown: [79] });
+    assert.equal(twice, once);
+    assert.equal(alignVerdictPriceText("Skip this $85 dress.", { displayed: 0 }), "Skip this $85 dress.");
+  });
+
+  it("replaces the only product mention even when the final price moved further", () => {
+    const text = alignVerdictPriceText("Worth about $85.", {
+      displayed: 64,
+      shown: [64],
+      preserve: [30],
+    });
+    assert.match(text, /\$64\.00/);
+    assert.equal(text.includes("$85"), false);
+  });
+});
+
 describe("analysis prompt", () => {
   it("tells the model not to invent price history or verified prices", () => {
     assert.match(ANALYSIS_SYSTEM_PROMPT, /priceHistory must be an empty array/);
@@ -154,5 +212,14 @@ describe("analysis prompt", () => {
     assert.match(ANALYSIS_SYSTEM_PROMPT, /Never describe a price as verified/);
     assert.equal(ANALYSIS_SYSTEM_PROMPT.includes('"date": "YYYY-MM"'), false);
     assert.match(ANALYSIS_SYSTEM_PROMPT, /not a scheduled sale/);
+  });
+
+  it("tells the model to return null instead of Unknown and to cite the shown price", () => {
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /set "brand" to null/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /set that "retailer" to null/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /Never write "Unknown"/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /Red Cowl Neck Slip Dress/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /lowest price in "prices"/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /not "Unknown Red Cowl Neck Slip Dress"/);
   });
 });

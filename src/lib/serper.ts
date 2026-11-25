@@ -1,3 +1,4 @@
+import { sanitizeLabel, sanitizeProductName } from "./product-label";
 import { isGenericSearchUrl, isProductDetailUrl, resolveRetailerDomain, resolveRetailerLink } from "./product-links";
 import { coercePrice } from "./utils";
 
@@ -96,7 +97,7 @@ export function buildSearchQuery(
   if (userQuery?.trim()) return userQuery.trim();
 
   const colorPart = product.colors.slice(0, 2).join(" ");
-  return [product.brand, colorPart, product.name].filter(Boolean).join(" ").trim();
+  return [sanitizeLabel(product.brand), colorPart, sanitizeProductName(product.name)].filter(Boolean).join(" ").trim();
 }
 
 export function scoreListingTitle(
@@ -107,7 +108,7 @@ export function scoreListingTitle(
   const t = title.toLowerCase();
   let score = 0;
 
-  const brand = product.brand.toLowerCase();
+  const brand = sanitizeLabel(product.brand).toLowerCase();
   if (brand && t.includes(brand)) score += 25;
 
   for (const color of product.colors) {
@@ -260,7 +261,7 @@ function scoreAndSortListings(
   userQuery?: string,
   requirePrice = true
 ): SerperListing[] {
-  const domain = getDomainForLabel(retailer) ?? getDomainForLabel(product.brand);
+  const domain = getDomainForLabel(sanitizeLabel(retailer)) ?? getDomainForLabel(sanitizeLabel(product.brand));
   const sharedImage = findFirstShoppingImage(items);
   const minScore = requirePrice ? 10 : 0;
 
@@ -478,7 +479,7 @@ export async function findRetailerLinkViaWebSearch(
 
   if (domain === "nike.com") {
     queries.unshift(`${baseQuery} site:nike.com/t`);
-    queries.push(`${product.brand} ${product.name} white site:nike.com/t`);
+    queries.push(`${sanitizeLabel(product.brand)} ${sanitizeProductName(product.name)} white site:nike.com/t`);
   }
   if (domain === "footlocker.com") {
     queries.push(`${baseQuery} site:footlocker.com/product`);

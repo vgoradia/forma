@@ -1,5 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { sanitizeLabel, sanitizeProductName } from "./product-label";
+
+export { formatAtRetailer, sanitizeLabel, sanitizeProductName, stripPlaceholderMentions } from "./product-label";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -59,8 +62,8 @@ export function toArray<T>(value: T | T[] | null | undefined): T[] {
 
 /** Remove a leading brand prefix when the model repeats it in `name`. */
 export function stripDuplicateBrand(brand: string, name: string): string {
-  const b = brand.trim();
-  const n = name.trim();
+  const b = sanitizeLabel(brand);
+  const n = sanitizeProductName(name);
   if (!b || !n) return n;
 
   const bLower = b.toLowerCase();
@@ -74,7 +77,7 @@ export function stripDuplicateBrand(brand: string, name: string): string {
 }
 
 export function formatProductTitle(brand: string, name: string): string {
-  const b = brand.trim();
+  const b = sanitizeLabel(brand);
   const n = stripDuplicateBrand(b, name);
   if (!b) return n;
   if (!n) return b;

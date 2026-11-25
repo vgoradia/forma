@@ -25,6 +25,7 @@ import { RETAILER_DOMAINS } from "./product-links";
 import { resolveProductImageUrl, resolveQueryImageUrl } from "./resolve-image";
 import { coercePrice } from "./utils";
 import { safeAsync, withTimeout } from "./resilience";
+import { isPlaceholderLabel } from "./product-label";
 import { normalizePriceTrend, syncEstimateFlag } from "./price-estimates";
 
 const ENRICH_TIMEOUT_MS = 50_000;
@@ -421,7 +422,10 @@ function applyBaselineEnrichment(analysis: ProductAnalysis): ProductAnalysis {
     ...(priceTrend ? { priceTrend } : {}),
     salePrediction: {
       likelihood: analysis.salePrediction?.likelihood ?? "low",
-      predictedDrop: analysis.salePrediction?.predictedDrop ?? "Unknown",
+      predictedDrop:
+        analysis.salePrediction?.predictedDrop && !isPlaceholderLabel(analysis.salePrediction.predictedDrop)
+          ? analysis.salePrediction.predictedDrop
+          : "unclear",
       estimatedSalePrice: analysis.salePrediction?.estimatedSalePrice ?? 0,
       reasoning: analysis.salePrediction?.reasoning ?? "",
       estimated: true,

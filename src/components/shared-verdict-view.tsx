@@ -6,7 +6,7 @@ import { ProductImage } from "@/components/product-image";
 import { ProductLink } from "@/components/product-link";
 import type { SharedVerdict } from "@/lib/shared-verdict";
 import { verdictTone } from "@/lib/shared-verdict";
-import { cn, formatPrice, formatProductTitle } from "@/lib/utils";
+import { cn, formatAtRetailer, formatPrice, formatProductTitle, sanitizeLabel, stripPlaceholderMentions } from "@/lib/utils";
 import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
 import { PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
 
@@ -32,7 +32,8 @@ const tierStyles = {
 };
 
 export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
-  const productTitle = formatProductTitle(verdict.product.brand, verdict.product.name);
+  const productTitle = formatProductTitle(verdict.product.brand, verdict.product.name) || "This find";
+  const atRetailer = formatAtRetailer(verdict.lowestPrice.retailer);
   const tone = verdictTone(verdict.verdict.recommendation);
   const color = verdict.product.colors[0];
   const subtitle = [color, verdict.product.category].filter(Boolean).join(" · ");
@@ -86,12 +87,13 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
               </p>
               <h1 className="mt-2 text-2xl font-bold text-gray-900">{productTitle}</h1>
               {subtitle && <p className="mt-1 text-sm text-forma-muted">{subtitle}</p>}
-              <p className="mt-4 text-lg font-semibold text-gray-900">{verdict.verdict.headline}</p>
+              <p className="mt-4 text-lg font-semibold text-gray-900">
+                {stripPlaceholderMentions(verdict.verdict.headline)}
+              </p>
               <p className="mt-3 text-base text-gray-700">
                 {verdict.lowestPrice.estimated ? "Estimated price about " : "Lowest price "}
                 <span className="font-bold text-emerald-600">{formatPrice(verdict.lowestPrice.price)}</span>
-                {" at "}
-                {verdict.lowestPrice.retailer}
+                {atRetailer ? ` ${atRetailer}` : ""}
                 {verdict.lowestPrice.priceVerified ? " · verified" : ""}
                 {verdict.lowestPrice.estimated && <EstimateBadge />}
               </p>
@@ -103,7 +105,9 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
         {verdict.verdict.reasoning && (
           <section className="mt-4 rounded-2xl border border-forma-border bg-white p-5">
             <h2 className="text-sm font-semibold text-gray-900">Why this verdict</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-700">{verdict.verdict.reasoning}</p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-700">
+              {stripPlaceholderMentions(verdict.verdict.reasoning)}
+            </p>
             {verdict.saleNote && (
               <div className="mt-3">
                 <p className="text-sm text-amber-800">
@@ -130,7 +134,9 @@ export function SharedVerdictView({ verdict }: { verdict: SharedVerdict }) {
           <ul className="mt-3 space-y-2">
             {prices.map((price, index) => (
               <li key={`${price.retailer}-${index}`} className="flex items-center justify-between text-sm">
-                <span className={index === 0 ? "font-medium text-gray-900" : "text-forma-muted"}>{price.retailer}</span>
+                <span className={index === 0 ? "font-medium text-gray-900" : "text-forma-muted"}>
+                  {sanitizeLabel(price.retailer)}
+                </span>
                 <span className={index === 0 ? "font-semibold text-emerald-600" : "font-medium text-gray-800"}>
                   {price.estimated ? `about ${formatPrice(price.price)}` : formatPrice(price.price)}
                 </span>

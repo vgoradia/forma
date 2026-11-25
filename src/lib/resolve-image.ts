@@ -6,6 +6,7 @@ import {
   normalizeImageUrl,
 } from "./serper";
 import { findOpenGraphImage, findWikipediaImage, resolveImageWithFallbacks } from "./image-fallbacks";
+import { sanitizeLabel, sanitizeProductName } from "./product-label";
 
 interface ProductImageInput {
   brand: string;
@@ -18,7 +19,7 @@ interface ProductImageInput {
 
 function buildProductQuery(product: ProductImageInput): string {
   const colorPart = product.colors?.slice(0, 2).join(" ") ?? "";
-  return [product.brand, colorPart, product.name].filter(Boolean).join(" ").trim();
+  return [sanitizeLabel(product.brand), colorPart, sanitizeProductName(product.name)].filter(Boolean).join(" ").trim();
 }
 
 export async function resolveProductImageUrl(
@@ -39,8 +40,8 @@ export async function resolveProductImageUrl(
   }
 
   const productInfo = {
-    brand: product.brand,
-    name: product.name,
+    brand: sanitizeLabel(product.brand),
+    name: sanitizeProductName(product.name),
     colors: product.colors ?? [],
     category: product.category ?? "",
   };
@@ -50,7 +51,7 @@ export async function resolveProductImageUrl(
   return resolveImageWithFallbacks(query, async () => {
     if (!serperKey) return undefined;
     return (
-      (await findProductImage(serperKey, productInfo, userQuery, product.retailer)) ??
+      (await findProductImage(serperKey, productInfo, userQuery, sanitizeLabel(product.retailer))) ??
       (await findImageForQuery(serperKey, query))
     );
   });
@@ -77,5 +78,5 @@ export async function resolveBrandProductImage(
   brand: string,
   name: string
 ): Promise<string | undefined> {
-  return findWikipediaImage(`${brand} ${name}`.trim());
+  return findWikipediaImage(`${sanitizeLabel(brand)} ${sanitizeProductName(name)}`.trim());
 }

@@ -53,8 +53,8 @@ export function getSourceIcon(scan: StoredScan): string {
 
 export function getProductName(scan: StoredScan): string {
   const p = scan.analysis?.identifiedProduct;
-  if (!p?.brand || !p?.name) return scan.label || "Saved scan";
-  return formatProductTitle(p.brand, p.name);
+  const title = p ? formatProductTitle(p.brand ?? "", p.name ?? "") : "";
+  return title || scan.label || "Saved scan";
 }
 
 export function getScanImage(scan: StoredScan): string | undefined {
@@ -126,6 +126,7 @@ export function getWardrobeMatchesFromScans(scans: StoredScan[]) {
 export function getRecentScanRows(scans: StoredScan[]) {
   return scans.slice(0, 9).map((scan) => ({
     id: scan.id,
+    name: getProductName(scan),
     source: getSourceLabel(scan),
     time: formatRelativeTime(scan.savedAt),
     icon: getSourceIcon(scan),
