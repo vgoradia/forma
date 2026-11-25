@@ -28,7 +28,17 @@ git push -u origin main
 
 4. Deploy → copy your `.vercel.app` URL
 
-## 3. Cloudflare domain
+## 3. Supabase
+
+In the Supabase SQL editor, run supabase/scan-usage.sql.
+The script is safe to re-run, including on a database where `scan_usage_monthly` and `user_scans` do not exist yet.
+It creates those tables, row level security, and the service-role functions that enforce guest, free, and Plus fair-use caps, plus the shared rate limiter.
+
+Set `SUPABASE_SERVICE_ROLE_KEY` on Vercel (the same key Plus and share links already use). In production, `/api/analyze` returns 503 when that key or those functions are missing.
+
+Also run `supabase/shared-verdicts.sql` if public share links are not set up yet.
+
+## 4. Cloudflare domain
 
 In Cloudflare → DNS:
 
@@ -41,7 +51,7 @@ In Vercel → Settings → Domains → add your domain.
 
 Set SSL/TLS to **Full** if using orange-cloud proxy.
 
-## 4. Post-deploy smoke test
+## 5. Post-deploy smoke test
 
 - [ ] `/` landing loads
 - [ ] `/onboarding` → `/home`
@@ -50,7 +60,7 @@ Set SSL/TLS to **Full** if using orange-cloud proxy.
 - [ ] Share link preview looks good (OG image)
 - [ ] Product links open in new tab
 
-## 5. After launch (growth — college app story)
+## 6. After launch (growth — college app story)
 
 - Product Hunt / Reddit r/femalefashionadvice / TikTok demo
 - Track scans via Vercel Analytics

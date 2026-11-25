@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { subscribeStorage } from "@/lib/storage-events";
+import { useEffect } from "react";
 import Link from "next/link";
 import { Camera, ChevronRight, BadgeCheck } from "lucide-react";
 import { getRecentScanRows } from "@/lib/scan-helpers";
@@ -16,7 +15,7 @@ import { ScanQuotaBanner } from "@/components/scan-quota-banner";
 import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { fetchProductImageUrl } from "@/lib/product-images";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { getScanQuota } from "@/lib/scan-quota";
+import { useScanQuota } from "@/hooks/use-scan-quota";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 function getGreeting() {
@@ -31,10 +30,7 @@ export default function AppHomePage() {
   const scans = useScans();
   const profile = useUserProfile();
   const { plan } = useSubscriptionPlan();
-  const [quotaTick, setQuotaTick] = useState(0);
-  useEffect(() => subscribeStorage(() => setQuotaTick((n) => n + 1)), []);
-  void quotaTick;
-  const quota = getScanQuota();
+  const quota = useScanQuota();
 
   useEffect(() => {
     if (!lastScan) return;

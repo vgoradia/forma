@@ -1,13 +1,25 @@
 import { createHash } from "crypto";
 import type { User } from "@supabase/supabase-js";
 import { readTrustedPlan } from "@/lib/plan";
-import { FREE_SCANS_PER_MONTH } from "@/lib/scan-quota";
+import {
+  FAIR_USE_LIMIT_MESSAGE,
+  FREE_LIMIT_MESSAGE,
+  FREE_SCANS_PER_MONTH,
+  GUEST_LIMIT_MESSAGE,
+  GUEST_SCANS_PER_MONTH,
+  PLUS_FAIR_USE_PER_MONTH,
+  SCANS_UNAVAILABLE_MESSAGE,
+} from "@/lib/scan-quota";
 import { getSupabaseAdmin, setUserPlan } from "@/lib/supabase/admin";
 import { isStripeConfigured } from "@/lib/stripe/config";
 import { findActivePlusSubscription, getStripe } from "@/lib/stripe/server";
 
 function monthKey(): string {
   return new Date().toISOString().slice(0, 7);
+}
+
+function production(): boolean {
+  return process.env.NODE_ENV === "production";
 }
 
 export function guestSubjectKey(ip: string): string {
@@ -17,6 +29,23 @@ export function guestSubjectKey(ip: string): string {
 
 export function userSubjectKey(userId: string): string {
   return `user:${userId}`;
+}
+
+/** Plus fair-use is a separate counter so upgrading does not inherit the free tally. */
+export function plusSubjectKey(userId: string): string {
+  return `plus:${userId}`;
+}
+
+export function subjectKeyForScan(user: User | null, ip: string, plan: "plus" | "free"): string {
+  if (plan === "plus" && user) return plusSubjectKey(user.id);
+  if (user) return userSubjectKey(user.id);
+  return guestSubjectKey(ip);
+}
+
+export function scanLimitFor(user: User | null, plan: "plus" | "free"): number {
+  if (plan === "plus" && user) return PLUS_FAIR_USE_PER_MONTH;
+  if (!user) return GUEST_SCANS_PER_MONTH;
+  return FREE_SCANS_PER_MONTH;
 }
 
 export async function resolveUserPlan(user: User | null): Promise<"plus" | "free"> {
@@ -53,9 +82,19 @@ type UsageState = {
   enforced: boolean;
 };
 
-async function readUsage(subjectKey: string): Promise<number> {
+function openUsage(limit: number): UsageState {
+  return {
+    allowed: true,
+    remaining: limit,
+    used: 0,
+    limit,
+    enforced: false,
+  };
+}
+
+export async function getServerScanUsage(subjectKey: string, limit: number): Promise<UsageState> {
   const admin = getSupabaseAdmin();
-  if (!admin) return 0;
+  if (!admin) return openUsage(limit);
 
   const { data, error } = await admin
     .from("scan_usage_monthly")
@@ -66,108 +105,162 @@ async function readUsage(subjectKey: string): Promise<number> {
 
   if (error) {
     console.warn("scan_usage_monthly read failed:", error.message);
-    return 0;
+    return openUsage(limit);
   }
 
-  return data?.scan_count ?? 0;
-}
-
-export async function getServerScanUsage(
-  subjectKey: string,
-  plan: "plus" | "free"
-): Promise<UsageState> {
-  if (plan === "plus") {
-    return {
-      allowed: true,
-      remaining: FREE_SCANS_PER_MONTH,
-      used: 0,
-      limit: FREE_SCANS_PER_MONTH,
-      enforced: Boolean(getSupabaseAdmin()),
-    };
-  }
-
-  const admin = getSupabaseAdmin();
-  if (!admin) {
-    return {
-      allowed: true,
-      remaining: FREE_SCANS_PER_MONTH,
-      used: 0,
-      limit: FREE_SCANS_PER_MONTH,
-      enforced: false,
-    };
-  }
-
-  const used = await readUsage(subjectKey);
-  const remaining = Math.max(0, FREE_SCANS_PER_MONTH - used);
+  const used = data?.scan_count ?? 0;
+  const remaining = Math.max(0, limit - used);
 
   return {
-    allowed: used < FREE_SCANS_PER_MONTH,
+    allowed: used < limit,
     remaining,
     used,
-    limit: FREE_SCANS_PER_MONTH,
+    limit,
     enforced: true,
   };
 }
 
-export async function assertCanAnalyze(options: {
-  user: User | null;
-  ip: string;
-}): Promise<
-  | { ok: true; subjectKey: string; plan: "plus" | "free" }
-  | { ok: false; status: 402; message: string; used: number; limit: number }
-> {
-  const plan = await resolveUserPlan(options.user);
-  const subjectKey = options.user
-    ? userSubjectKey(options.user.id)
-    : guestSubjectKey(options.ip);
+type ConsumeRow = { allowed: boolean; used: number };
 
-  const usage = await getServerScanUsage(subjectKey, plan);
-  if (!usage.allowed) {
+function readConsumeResult(data: unknown): ConsumeRow | null {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== "object") return null;
+  const record = row as { allowed?: unknown; used?: unknown };
+  if (typeof record.allowed !== "boolean") return null;
+  const used = typeof record.used === "number" ? record.used : Number(record.used);
+  if (!Number.isFinite(used)) return null;
+  return { allowed: record.allowed, used };
+}
+
+export type ScanReservation =
+  | {
+      ok: true;
+      subjectKey: string;
+      month: string;
+      plan: "plus" | "free";
+      limit: number;
+      reserved: boolean;
+    }
+  | {
+      ok: false;
+      status: 402 | 503;
+      code: "scan_limit_reached" | "guest_limit_reached" | "fair_use_limit_reached" | "scans_unavailable";
+      message: string;
+      used: number;
+      limit: number;
+    };
+
+function unavailable(limit: number): ScanReservation {
+  return {
+    ok: false,
+    status: 503,
+    code: "scans_unavailable",
+    message: SCANS_UNAVAILABLE_MESSAGE,
+    used: 0,
+    limit,
+  };
+}
+
+function limitReached(
+  user: User | null,
+  plan: "plus" | "free",
+  used: number,
+  limit: number
+): ScanReservation {
+  if (plan === "plus" && user) {
     return {
       ok: false,
       status: 402,
-      message:
-        "You've used all free scans this month. Upgrade to Forma Plus on Profile for unlimited verdicts.",
-      used: usage.used,
-      limit: usage.limit,
+      code: "fair_use_limit_reached",
+      message: FAIR_USE_LIMIT_MESSAGE,
+      used,
+      limit,
     };
   }
 
-  return { ok: true, subjectKey, plan };
+  if (!user) {
+    return {
+      ok: false,
+      status: 402,
+      code: "guest_limit_reached",
+      message: GUEST_LIMIT_MESSAGE,
+      used,
+      limit,
+    };
+  }
+
+  return {
+    ok: false,
+    status: 402,
+    code: "scan_limit_reached",
+    message: FREE_LIMIT_MESSAGE,
+    used,
+    limit,
+  };
 }
 
-export async function recordServerScanUsage(subjectKey: string, plan: "plus" | "free"): Promise<void> {
-  if (plan === "plus") return;
+/**
+ * Reserve one scan before the model runs. Production refuses the scan when
+ * Supabase or consume_scan is unavailable. Local dev allows it.
+ */
+export async function reserveScan(options: {
+  user: User | null;
+  ip: string;
+}): Promise<ScanReservation> {
+  const plan = await resolveUserPlan(options.user);
+  const subjectKey = subjectKeyForScan(options.user, options.ip, plan);
+  const limit = scanLimitFor(options.user, plan);
+  const month = monthKey();
+  const admin = getSupabaseAdmin();
 
+  if (!admin) {
+    if (production()) return unavailable(limit);
+    return { ok: true, subjectKey, month, plan, limit, reserved: false };
+  }
+
+  try {
+    const { data, error } = await admin.rpc("consume_scan", {
+      p_subject: subjectKey,
+      p_month: month,
+      p_limit: limit,
+    });
+
+    if (error) {
+      console.warn("consume_scan failed:", error.message);
+      if (production()) return unavailable(limit);
+      return { ok: true, subjectKey, month, plan, limit, reserved: false };
+    }
+
+    const result = readConsumeResult(data);
+    if (!result) {
+      console.warn("consume_scan returned an unexpected payload");
+      if (production()) return unavailable(limit);
+      return { ok: true, subjectKey, month, plan, limit, reserved: false };
+    }
+
+    if (!result.allowed) {
+      return limitReached(options.user, plan, result.used, limit);
+    }
+
+    return { ok: true, subjectKey, month, plan, limit, reserved: true };
+  } catch (error) {
+    console.warn("consume_scan failed:", error instanceof Error ? error.message : error);
+    if (production()) return unavailable(limit);
+    return { ok: true, subjectKey, month, plan, limit, reserved: false };
+  }
+}
+
+export async function releaseScan(subjectKey: string, month = monthKey()): Promise<void> {
   const admin = getSupabaseAdmin();
   if (!admin) return;
 
-  const month = monthKey();
-
-  const { data: existing, error: readError } = await admin
-    .from("scan_usage_monthly")
-    .select("scan_count")
-    .eq("subject_key", subjectKey)
-    .eq("month_key", month)
-    .maybeSingle();
-
-  if (readError) {
-    console.warn("scan_usage_monthly read failed:", readError.message);
-    return;
-  }
-
-  const nextCount = (existing?.scan_count ?? 0) + 1;
-
-  const { error: writeError } = await admin.from("scan_usage_monthly").upsert(
-    {
-      subject_key: subjectKey,
-      month_key: month,
-      scan_count: nextCount,
-    },
-    { onConflict: "subject_key,month_key" }
-  );
-
-  if (writeError) {
-    console.warn("scan_usage_monthly write failed:", writeError.message);
+  try {
+    const { error } = await admin.rpc("release_scan", {
+      p_subject: subjectKey,
+      p_month: month,
+    });
+    if (error) console.warn("release_scan failed:", error.message);
+  } catch (error) {
+    console.warn("release_scan failed:", error instanceof Error ? error.message : error);
   }
 }

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getClientIp } from "@/lib/rate-limit";
 import {
   getServerScanUsage,
-  guestSubjectKey,
   resolveUserPlan,
-  userSubjectKey,
+  scanLimitFor,
+  subjectKeyForScan,
 } from "@/lib/scan-usage-server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
   }
 
   const plan = await resolveUserPlan(user);
-  const subjectKey = user ? userSubjectKey(user.id) : guestSubjectKey(ip);
-  const usage = await getServerScanUsage(subjectKey, plan);
+  const subjectKey = subjectKeyForScan(user, ip, plan);
+  const usage = await getServerScanUsage(subjectKey, scanLimitFor(user, plan));
 
   return NextResponse.json({
     plan,

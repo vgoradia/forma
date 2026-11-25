@@ -1,5 +1,7 @@
--- Run once in Supabase → SQL Editor (production project).
--- Enables server-side free scan limits + cloud scan history for signed-in users.
+-- Production: run supabase/scan-usage.sql
+-- That script is idempotent. It creates these tables, their RLS policies,
+-- and the service-role functions that enforce scan limits.
+-- This file is the table sketch. Run supabase/scan-usage.sql in the SQL editor.
 
 -- Monthly scan counts (service role only; guests + users).
 create table if not exists public.scan_usage_monthly (
@@ -50,3 +52,4 @@ create policy "Users delete own scans"
 --
 -- Public share links live in supabase/shared-verdicts.sql.
 -- Run that file too (existing projects that already applied the statements above).
+-- For scan limits and rate limits, run supabase/scan-usage.sql.

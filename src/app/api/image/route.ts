@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, getClientIp, MAX_IMAGE_LOOKUP_REQUESTS } from "@/lib/rate-limit";
+import { checkRateLimit, denyRateLimit, getClientIp, MAX_IMAGE_LOOKUP_REQUESTS } from "@/lib/rate-limit";
 import { fetchPublicHttp, ResponseTooLargeError, UnsafeUrlError } from "@/lib/safe-public-fetch";
 import { isAllowedProxyImageUrl } from "@/lib/security";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
-  const limit = checkRateLimit(`image-proxy:${ip}`, MAX_IMAGE_LOOKUP_REQUESTS);
+  const limit = await checkRateLimit(`image-proxy:${ip}`, MAX_IMAGE_LOOKUP_REQUESTS);
 
   if (!limit.ok) {
-    return NextResponse.json(
-      { error: `Too many requests. Try again in ${limit.retryAfter}s.` },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    return denyRateLimit(
+      limit,
+      (seconds) => `Too many requests. Try again in ${seconds}s.`,
+      "Try again in a minute."
     );
   }
 

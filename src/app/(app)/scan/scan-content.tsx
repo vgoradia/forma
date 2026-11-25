@@ -4,15 +4,22 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { GoogleSignInButton } from "@/components/auth-ui";
 import { UploadZone } from "@/components/upload-zone";
 import type { ProductAnalysis } from "@/lib/types";
 import { completeOnboarding, saveScan } from "@/lib/storage";
 import { sanitizeProductAnalysis } from "@/lib/scan-validation";
 import { PageContainer } from "@/components/page-container";
 import { trackEvent } from "@/lib/analytics";
-import { canStartScan, recordScanUsage } from "@/lib/scan-quota";
+import {
+  FREE_LIMIT_MESSAGE,
+  GUEST_LIMIT_MESSAGE,
+  recordScanUsage,
+  requestScanQuotaRefresh,
+} from "@/lib/scan-quota";
 import { pushScanToCloud } from "@/lib/scans-cloud";
 import { ScanQuotaBanner } from "@/components/scan-quota-banner";
+import { useScanQuota } from "@/hooks/use-scan-quota";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 const LOADING_STEPS = [
@@ -31,7 +38,9 @@ export function ScanContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const { plan } = useSubscriptionPlan();
+  const quota = useScanQuota();
   const isPlus = plan === "plus";
 
   useEffect(() => {
@@ -47,15 +56,23 @@ export function ScanContent() {
   }, [isLoading]);
 
   const handleAnalyze = async (formData: FormData, meta?: { imagePreview?: string }) => {
-    if (!canStartScan(isPlus)) {
-      trackEvent("scan_limit_reached");
-      setError("You've used all free scans this month. Upgrade to Forma Plus on Profile for unlimited verdicts.");
+    if (!isPlus && !quota.loading && quota.remaining <= 0) {
+      if (quota.isGuest) {
+        trackEvent("guest_limit_reached");
+        setNeedsSignIn(true);
+        setError(GUEST_LIMIT_MESSAGE);
+      } else {
+        trackEvent("scan_limit_reached");
+        setNeedsSignIn(false);
+        setError(FREE_LIMIT_MESSAGE);
+      }
       return;
     }
 
     setIsLoading(true);
     setLoadingStep(0);
     setError(null);
+    setNeedsSignIn(false);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
@@ -72,7 +89,11 @@ export function ScanContent() {
           error?: string;
           code?: string;
         };
-        if (res.status === 402 || data.code === "scan_limit_reached") {
+        requestScanQuotaRefresh();
+        if (data.code === "guest_limit_reached") {
+          trackEvent("guest_limit_reached");
+          setNeedsSignIn(true);
+        } else if (res.status === 402 || data.code === "scan_limit_reached") {
           trackEvent("scan_limit_reached");
         }
         throw new Error(data.error ?? "Analysis failed");
@@ -157,9 +178,17 @@ export function ScanContent() {
       {error && (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center">
           <p className="text-sm text-red-700">{error}</p>
+          {needsSignIn && (
+            <div className="mt-3 text-left">
+              <GoogleSignInButton redirectTo="/scan" label="Sign in with Google" />
+            </div>
+          )}
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+              setNeedsSignIn(false);
+            }}
             className="mt-2 text-xs font-semibold text-red-800 underline"
           >
             Dismiss and try again
