@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { verdictTone, type SharedVerdict } from "@/lib/shared-verdict";
-import { sanitizeLabel, stripPlaceholderMentions } from "@/lib/product-label";
+import { alignVerdictPriceText } from "@/lib/price-estimates";
+import { stripPlaceholderMentions } from "@/lib/product-label";
+import { resolveRetailerLabel } from "@/lib/retailer-rows";
 import { formatPrice, formatProductTitle } from "@/lib/utils";
 
 export const VERDICT_OG_SIZE = { width: 1200, height: 630 };
@@ -28,12 +30,27 @@ export async function renderVerdictImage(verdict: SharedVerdict) {
   const logoSrc = await loadLogoSrc();
   const tone = verdictTone(verdict.verdict.recommendation);
   const title = clip(formatProductTitle(verdict.product.brand, verdict.product.name) || "This find", 64);
-  const headline = clip(stripPlaceholderMentions(verdict.verdict.headline), 110);
+  const headline = clip(
+    alignVerdictPriceText(stripPlaceholderMentions(verdict.verdict.headline), {
+      displayed: verdict.lowestPrice.price,
+      shown: [
+        verdict.lowestPrice.price,
+        ...verdict.prices.flatMap((price) =>
+          price.priceHigh && price.priceHigh > price.price ? [price.price, price.priceHigh] : [price.price]
+        ),
+      ],
+      preserve: [
+        ...verdict.alternatives.map((alt) => alt.price),
+        ...verdict.secondhand.map((platform) => platform.price),
+      ],
+    }),
+    110
+  );
   const verified = verdict.lowestPrice.priceVerified && !verdict.lowestPrice.estimated;
   const price = formatPrice(verdict.lowestPrice.price);
   const priceLabel = verified ? "Lowest price" : "Estimated price";
   const priceText = verified ? price : `about ${price}`;
-  const retailer = clip(sanitizeLabel(verdict.lowestPrice.retailer), 32);
+  const retailer = clip(resolveRetailerLabel(verdict.lowestPrice.retailer, verdict.lowestPrice.url), 32);
 
   return new ImageResponse(
     (

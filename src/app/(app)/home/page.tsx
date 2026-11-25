@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Camera, ChevronRight, BadgeCheck } from "lucide-react";
 import { getRecentScanRows } from "@/lib/scan-helpers";
 import { saveScan, useLastScan, useScans } from "@/lib/storage";
+import { resolveRetailerLabel } from "@/lib/retailer-rows";
 import { formatAtRetailer, formatPrice, formatProductTitle, stripPlaceholderMentions } from "@/lib/utils";
-import { isEstimatedPrice } from "@/lib/price-estimates";
+import { alignVerdictPriceText, isEstimatedPrice } from "@/lib/price-estimates";
 import { EstimateBadge } from "@/components/estimate-badge";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
@@ -67,7 +68,7 @@ export default function AppHomePage() {
   const product = lastScan?.analysis.identifiedProduct;
   const lowest = lastScan?.analysis.lowestPrice;
   const productTitle = product ? formatProductTitle(product.brand, product.name) || product.category || "This item" : "";
-  const atRetailer = lowest ? formatAtRetailer(lowest.retailer) : "";
+  const atRetailer = lowest ? formatAtRetailer(resolveRetailerLabel(lowest.retailer, lowest.url)) : "";
   const showPlus =
     plan !== "plus" && (scans.length > 0 || quota.remaining <= 2);
 
@@ -123,7 +124,15 @@ export default function AppHomePage() {
                 {productTitle}
               </p>
               <p className="mt-2 text-sm text-gray-700">
-                {stripPlaceholderMentions(lastScan.analysis.verdict.headline)}
+                {alignVerdictPriceText(stripPlaceholderMentions(lastScan.analysis.verdict.headline), {
+                  displayed: lowest.price,
+                  shown: [lowest.price, ...lastScan.analysis.prices.map((price) => price.price)],
+                  preserve: [
+                    ...lastScan.analysis.alternatives.map((alt) => alt.price),
+                    ...lastScan.analysis.secondhand.platforms.map((platform) => platform.price),
+                    lastScan.analysis.salePrediction?.estimatedSalePrice ?? 0,
+                  ],
+                })}
               </p>
               <p className="mt-2 text-sm text-gray-700 lg:text-base">
                 {isEstimatedPrice(lowest) ? "Estimated: about " : "Lowest: "}

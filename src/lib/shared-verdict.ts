@@ -1,5 +1,7 @@
+import { orderAlternatives } from "./alternatives";
 import type { ProductAnalysis } from "./types";
 import { alignVerdictCopy } from "./price-estimates";
+import { collapseRetailerPrices, resolveRetailerLabel } from "./retailer-rows";
 import {
   formatAtRetailer,
   isPlaceholderLabel,
@@ -29,6 +31,8 @@ const PII_QUERY_KEY =
 export interface SharedPrice {
   retailer: string;
   price: number;
+  /** Set when several quotes from the same retailer were collapsed into one row. */
+  priceHigh?: number;
   url: string;
   /** False only when a live listing confirmed the figure. */
   estimated: boolean;
@@ -213,9 +217,13 @@ export function toSharedVerdict(
   const lowest = readPriceRow(input.lowestPrice, isHostBlocked);
   if (!lowest) return null;
   const lowestVerified = isRecord(input.lowestPrice) && input.lowestPrice.priceVerified === true;
+  const lowestLabeled = {
+    ...lowest,
+    retailer: resolveRetailerLabel(lowest.retailer, lowest.url),
+  };
 
-  const prices = readPriceList(input.prices, isHostBlocked);
-  const priceRows = prices.length > 0 ? prices : [lowest];
+  const prices = collapseRetailerPrices(readPriceList(input.prices, isHostBlocked));
+  const priceRows = (prices.length > 0 ? prices : lowestLabeled.retailer ? [lowestLabeled] : []).slice(0, 4);
 
   const imageUrl =
     sanitizePublicUrl(productRecord.imageUrl, isHostBlocked) ||
@@ -229,14 +237,19 @@ export function toSharedVerdict(
       : {};
 
   const saleNote = readSaleNote(input);
-  const alternatives = readAlternatives(input.alternatives, isHostBlocked);
+  const alternatives = orderAlternatives(readAlternatives(input.alternatives, isHostBlocked), lowest.price);
   const secondhand = readSecondhand(input.secondhand, isHostBlocked);
   const aligned = alignVerdictCopy(
     scrubText(verdictRecord.headline, 180) || `Forma says ${verdictSharePhrase(recommendation)}`,
     scrubText(verdictRecord.reasoning, 500),
     {
       displayed: lowest.price,
-      shown: [lowest.price, ...priceRows.map((price) => price.price)],
+      shown: [
+        lowest.price,
+        ...priceRows.flatMap((price) =>
+          price.priceHigh && price.priceHigh > price.price ? [price.price, price.priceHigh] : [price.price]
+        ),
+      ],
       preserve: [
         ...alternatives.map((alt) => alt.price),
         ...secondhand.map((platform) => platform.price),
@@ -261,7 +274,7 @@ export function toSharedVerdict(
       worthItScore: clampScore(verdictRecord.worthItScore),
     },
     lowestPrice: {
-      ...lowest,
+      ...lowestLabeled,
       priceVerified: lowestVerified,
       estimated: lowestVerified ? false : lowest.estimated,
     },
@@ -357,8 +370,7 @@ function readPriceList(value: unknown, isHostBlocked: HostBlocker): SharedPrice[
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => readPriceRow(item, isHostBlocked))
-    .filter((price): price is SharedPrice => price !== null)
-    .slice(0, 4);
+    .filter((price): price is SharedPrice => price !== null);
 }
 
 function readEstimated(row: Record<string, unknown>): boolean {
@@ -371,9 +383,11 @@ function readPriceRow(value: unknown, isHostBlocked: HostBlocker): SharedPrice |
   const retailer = sanitizeLabel(scrubText(value.retailer, 80));
   const price = coercePrice(value.price);
   if (price === undefined) return null;
+  const priceHigh = coercePrice(value.priceHigh);
   return {
     retailer,
     price,
+    ...(priceHigh && priceHigh > price ? { priceHigh } : {}),
     url: sanitizePublicUrl(value.url, isHostBlocked),
     estimated: readEstimated(value),
   };

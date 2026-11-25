@@ -15,7 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import type { ProductAnalysis } from "@/lib/types";
-import { cn, formatAtRetailer, formatPrice, formatProductTitle, sanitizeLabel, stripPlaceholderMentions, toArray } from "@/lib/utils";
+import { cn, formatAtRetailer, formatPrice, formatProductTitle, stripPlaceholderMentions, toArray } from "@/lib/utils";
 import { ProductLink } from "@/components/product-link";
 import { PageContainer } from "@/components/page-container";
 import { ProductImage, getAnalysisHeroImage } from "@/components/product-image";
@@ -24,7 +24,9 @@ import { GUEST_INITIALS } from "@/lib/user";
 import { ScoreRing } from "@/components/analysis/score-ring";
 import { VerdictBadge } from "@/components/analysis/verdict-badge";
 import { getAlternativeTierLabel } from "@/lib/scan-helpers";
-import { describePriceTrend, isEstimatedPrice, PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
+import { orderAlternatives } from "@/lib/alternatives";
+import { alignVerdictCopy, describePriceTrend, isEstimatedPrice, PRICE_ESTIMATE_NOTE, PRICE_TREND_NOTE } from "@/lib/price-estimates";
+import { collapseRetailerPrices, formatRetailerPrice, resolveRetailerLabel } from "@/lib/retailer-rows";
 import { EstimateBadge, EstimateFootnote } from "@/components/estimate-badge";
 import { getPrefs, isBookmarked, toggleBookmark } from "@/lib/storage";
 import { subscribeStorage } from "@/lib/storage-events";
@@ -66,9 +68,27 @@ export function AnalysisDetail({
 }) {
   const product = analysis.identifiedProduct;
   const productTitle = formatProductTitle(product.brand, product.name) || product.category || "This item";
-  const atRetailer = formatAtRetailer(analysis.lowestPrice.retailer);
-  const verdictHeadline = stripPlaceholderMentions(analysis.verdict.headline);
-  const verdictReasoning = stripPlaceholderMentions(analysis.verdict.reasoning);
+  const atRetailer = formatAtRetailer(
+    resolveRetailerLabel(analysis.lowestPrice.retailer, analysis.lowestPrice.url)
+  );
+  const priceRows = collapseRetailerPrices(analysis.prices);
+  const alternatives = orderAlternatives(analysis.alternatives, analysis.lowestPrice.price);
+  const alignedVerdict = alignVerdictCopy(analysis.verdict.headline, analysis.verdict.reasoning, {
+    displayed: analysis.lowestPrice.price,
+    shown: [
+      analysis.lowestPrice.price,
+      ...priceRows.flatMap((price) =>
+        price.priceHigh && price.priceHigh > price.price ? [price.price, price.priceHigh] : [price.price]
+      ),
+    ],
+    preserve: [
+      ...alternatives.map((alt) => alt.price),
+      ...(analysis.secondhand?.platforms ?? []).map((platform) => platform.price),
+      analysis.salePrediction?.estimatedSalePrice ?? 0,
+    ],
+  });
+  const verdictHeadline = alignedVerdict.headline;
+  const verdictReasoning = alignedVerdict.reasoning;
   const colors = toArray(product.colors);
   const match = Math.round(product.confidence * 100);
   const heroImage = getAnalysisHeroImage(analysis, imagePreview);
@@ -147,7 +167,7 @@ export function AnalysisDetail({
         recommendation: analysis.verdict.recommendation,
         headline: verdictHeadline,
         lowestPrice: formatPrice(analysis.lowestPrice.price),
-        retailer: sanitizeLabel(analysis.lowestPrice.retailer),
+        retailer: resolveRetailerLabel(analysis.lowestPrice.retailer, analysis.lowestPrice.url),
         priceEstimated: isEstimatedPrice(analysis.lowestPrice),
         path,
       });
@@ -174,7 +194,7 @@ export function AnalysisDetail({
   };
 
   const lowestEstimated = isEstimatedPrice(analysis.lowestPrice);
-  const anyPriceEstimated = lowestEstimated || analysis.prices.some((price) => isEstimatedPrice(price));
+  const anyPriceEstimated = lowestEstimated || priceRows.some((price) => isEstimatedPrice(price));
   const priceTrend = describePriceTrend(analysis);
 
   return (
@@ -239,7 +259,7 @@ export function AnalysisDetail({
           </p>
           {lowestEstimated && <EstimateFootnote>{PRICE_ESTIMATE_NOTE}</EstimateFootnote>}
           <p className="mt-2 text-xs text-forma-muted lg:text-sm">
-            {analysis.prices.length} retailers compared • {analysis.alternatives.length} better alternatives found
+            {priceRows.length} retailers compared • {alternatives.length} better alternatives found
           </p>
           <div className="mt-4 flex justify-center gap-4 lg:justify-start lg:gap-6">
             <ScoreRing score={analysis.verdict.worthItScore} label="Worth it" />
@@ -321,16 +341,17 @@ export function AnalysisDetail({
           }
         >
           <div className="space-y-2">
-            {analysis.prices.slice(0, 4).map((p, i) => {
+            {priceRows.slice(0, 4).map((p, i) => {
               const estimated = isEstimatedPrice(p);
+              const figure = formatRetailerPrice(p.price, p.priceHigh);
               return (
-                <div key={`${p.retailer}-${i}`} className="flex items-center justify-between text-xs lg:text-sm">
+                <div key={`${p.retailer}-${p.price}-${i}`} className="flex items-center justify-between text-xs lg:text-sm">
                   <span className={cn("font-medium", i === 0 ? "text-gray-900" : "text-forma-muted")}>
-                    {sanitizeLabel(p.retailer)}
+                    {p.retailer}
                   </span>
                   <span className={cn("font-semibold", i === 0 ? "text-emerald-600" : "text-gray-700")}>
-                    {estimated ? `about ${formatPrice(p.price)}` : formatPrice(p.price)}
-                    {!estimated && (
+                    {estimated ? `about ${figure}` : figure}
+                    {!estimated && !p.priceHigh && (
                       <span className="ml-1 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
                         verified
                       </span>
@@ -384,17 +405,17 @@ export function AnalysisDetail({
       <section className="mb-4 lg:mb-6">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold text-gray-900 lg:text-base">Better alternatives</h2>
-          {analysis.alternatives.some((alt) => isEstimatedPrice(alt)) && (
+          {alternatives.some((alt) => isEstimatedPrice(alt)) && (
             <EstimateBadge note="Dupe prices are AI estimates unless a live listing verified them." />
           )}
         </div>
-        {analysis.alternatives.some((alt) => isEstimatedPrice(alt)) && (
+        {alternatives.some((alt) => isEstimatedPrice(alt)) && (
           <p className="mb-3 text-[11px] leading-relaxed text-forma-muted lg:text-xs">
             Dupe prices are AI estimates unless a live listing verified them.
           </p>
         )}
         <div className="flex gap-3 overflow-x-auto hide-scrollbar lg:grid lg:grid-cols-3 lg:overflow-visible xl:grid-cols-4">
-          {analysis.alternatives.map((alt) => {
+          {alternatives.map((alt) => {
             const altTitle = formatProductTitle(alt.brand, alt.name);
             return (
             <div
@@ -426,7 +447,7 @@ export function AnalysisDetail({
             );
           })}
         </div>
-        {analysis.alternatives.length > 0 && <AffiliateLinkNote className="mt-3" />}
+        {alternatives.length > 0 && <AffiliateLinkNote className="mt-3" />}
       </section>
 
       {analysis.secondhand.available && analysis.secondhand.platforms.length > 0 && (

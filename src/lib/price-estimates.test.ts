@@ -203,6 +203,53 @@ describe("verdict price consistency", () => {
     assert.match(text, /\$64\.00/);
     assert.equal(text.includes("$85"), false);
   });
+
+  it("rewrites approximate mentions of the item's own price to the displayed estimate", () => {
+    const context = { displayed: 62, shown: [62, 65], preserve: [40, 48] };
+    for (const phrase of ["around $65", "~$65", "$65-ish", "about 65 dollars"]) {
+      const text = alignVerdictPriceText(`This dress is ${phrase}.`, context);
+      assert.match(text, /\$62\.00/, phrase);
+      assert.equal(text.includes("65"), false, phrase);
+    }
+    const once = alignVerdictPriceText("This dress is around $65.", context);
+    assert.equal(alignVerdictPriceText(once, context), once);
+  });
+
+  it("rewrites a rounded mention inside ±25% even when another price is in the sentence", () => {
+    const text = alignVerdictPriceText("It's about $74, and shoppers also see $120.", {
+      displayed: 62,
+      shown: [62],
+    });
+    assert.match(text, /\$62\.00/);
+    assert.match(text, /\$120/);
+    assert.equal(text.includes("74"), false);
+  });
+
+  it("leaves dupe, secondhand, and sale prices alone", () => {
+    const dupe = alignVerdictPriceText("The $85 dress loses to a $40 dupe.", {
+      displayed: 62,
+      shown: [62],
+      preserve: [40],
+    });
+    assert.match(dupe, /\$62\.00/);
+    assert.match(dupe, /\$40/);
+
+    const secondhand = alignVerdictPriceText("Depop has it for about $40.", {
+      displayed: 62,
+      shown: [62],
+      preserve: [40],
+    });
+    assert.match(secondhand, /\$40/);
+    assert.equal(secondhand.includes("62"), false);
+
+    const sale = alignVerdictPriceText("It goes on sale for around $50.", {
+      displayed: 62,
+      shown: [62],
+      preserve: [48],
+    });
+    assert.match(sale, /\$50/);
+    assert.equal(sale.includes("62"), false);
+  });
 });
 
 describe("analysis prompt", () => {
@@ -221,5 +268,8 @@ describe("analysis prompt", () => {
     assert.match(ANALYSIS_SYSTEM_PROMPT, /Red Cowl Neck Slip Dress/);
     assert.match(ANALYSIS_SYSTEM_PROMPT, /lowest price in "prices"/);
     assert.match(ANALYSIS_SYSTEM_PROMPT, /not "Unknown Red Cowl Neck Slip Dress"/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /at least one alternative priced below this item/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /Do not use tier "dupe" for anything that costs more/);
+    assert.match(ANALYSIS_SYSTEM_PROMPT, /Put cheaper alternatives before premium ones/);
   });
 });
